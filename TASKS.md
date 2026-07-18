@@ -13,66 +13,81 @@ importer **last**, because it's blocked on a real notes sample.
 ---
 
 ## Milestone 0 — Scaffolding & deploy
-- [ ] Create the private repo `clwesterl/movie-months` (data + app).
-- [ ] Single-file `index.html` skeleton (HTML/CSS/JS, no build step).
-- [ ] GitHub Pages serving the app.
+- [x] Repos created — split like Two Spins, since Pages can't serve a private
+      repo on the free plan: **public** `clwesterl/movie-months` (app) +
+      **private** `clwesterl/movie-months-data` (data). CLAUDE.md updated.
+- [x] Single-file `index.html` skeleton (HTML/CSS/JS, no build step).
+- [x] GitHub Pages serving the app → https://clwesterl.github.io/movie-months/
 - [ ] Fine-grained PAT wired in; confirm authenticated read/write to the repo.
-- [ ] Two-tab shell: **Marathon** and **Notebook** (empty for now).
-- [ ] iPad-first layout that also holds up on desktop (see Users & devices).
+      _App side done (settings ⚙ stores the token; Contents read/write on the
+      data repo confirmed via API). Remaining: create the fine-grained token
+      (Contents read/write, only `movie-months-data`) and paste it into ⚙ on
+      each device._
+- [x] Two-tab shell: **Marathon** and **Notebook**.
+- [x] iPad-first layout that also holds up on desktop (see Users & devices).
 
 ## Milestone 1 — Storage layer
 _The riskiest plumbing; build and test it before any feature sits on it._
-- [ ] Read/write JSON via the GitHub Contents API.
-- [ ] Marathon file schema (one file per month; optional theme; day entries
-      with optional `dateWatched`).
-- [ ] Notebook file schema (running list of short text entries).
-- [ ] Handle the known gotchas from Two Spins (PAT scope, commit hygiene —
-      no stray `.DS_Store`, sane commit messages).
-- [ ] Graceful error handling on read/write failures.
+- [x] Read/write JSON via the GitHub Contents API (sha-tracked; refetch-once
+      on write conflicts).
+- [x] Marathon file schema (`marathons/YYYY-MM.json`; optional theme; day
+      entries with optional `dateWatched`).
+- [x] Notebook file schema (`notebook.json`, running list of short entries).
+- [x] Handle the known gotchas from Two Spins (PAT scope, commit hygiene —
+      `.DS_Store` gitignored, per-action commit messages, pretty-printed JSON).
+- [x] Graceful error handling on read/write failures (auth vs. missing-repo
+      vs. offline get distinct messages; toasts elsewhere).
 
 ## Milestone 2 — Wikidata lookup module
 _Self-contained; reused by both Milestone 3 and Milestone 7._
-- [ ] Search Wikidata by title → candidate list **with disambiguating
-      descriptions** (e.g. "1972 film by Andrei Tarkovsky").
-- [ ] On pick, resolve properties → year (P577), country (P495),
-      director (P57), genre (P136), IMDb ID (P345).
-- [ ] Build the `imdb.com/title/{imdb_id}/` link from P345.
-- [ ] Test against ambiguous titles (e.g. *Solaris*) before wiring to UI.
+- [x] Search Wikidata by title → candidate list **with disambiguating
+      descriptions** (film-described results float to the top).
+- [x] On pick, resolve properties → year (P577, earliest), country (P495),
+      director (P57), genre (P136), IMDb ID (P345); entity IDs → EN labels.
+- [x] Build the `imdb.com/title/{imdb_id}/` link from P345.
+- [x] Test against ambiguous titles — *Solaris* returns Tarkovsky '72 and
+      Soderbergh '02 as the top two candidates; '72 resolves fully.
 
 ## Milestone 3 — Marathon tab: live add-a-movie (MVP)
 _A marathon can run on just this._
-- [ ] "Add today's movie": type title → pick candidate → autopopulate fields.
-- [ ] `dateWatched` defaults to today; **all fields editable** after populate.
-- [ ] Save the entry into the current month's marathon file.
-- [ ] Current-month list/calendar view that fills in as days are added.
+- [x] "Add today's movie": type title → pick candidate → autopopulate fields
+      (plus a manual-entry escape hatch when Wikidata has nothing).
+- [x] `dateWatched` defaults to today; **all fields editable** after populate.
+- [x] Save the entry into the current month's marathon file.
+- [x] Current-month list view with day numbers that fills in as days are
+      added; tap an entry to edit or delete it.
 
 ## Milestone 4 — Notebook tab
 _Small and independent; can land any time after Milestone 1._
-- [ ] Running list of short entries, newest on top.
-- [ ] Add an entry; tap to delete. Freeform, no categories.
-- [ ] Persist to the notebook JSON file.
+- [x] Running list of short entries, newest on top.
+- [x] Add an entry; tap to delete (with confirm). Freeform, no categories.
+- [x] Persist to the notebook JSON file.
 
 ## Milestone 5 — Completed-months browsing
-- [ ] **Completed-months dropdown** (required).
-- [ ] Selecting a month loads that marathon for browsing.
-- [ ] Entries without `dateWatched` fall back to sequence order.
+- [x] **Completed-months dropdown** (from the `marathons/` directory listing;
+      current month always present).
+- [x] Selecting a month loads that marathon for browsing (and editing).
+- [x] Entries without `dateWatched` fall back to sequence order for their
+      day number.
 
 ## Milestone 6 — Search & filter
-- [ ] Search + filter across all fields: title, year, country, director,
-      genre, date watched.
-- [ ] Build it **extensibly** — don't hard-code the filter set; new fields
-      may be added later.
+- [x] Search + filter across all fields: title, year, country, director,
+      genre, date watched. Scope: this month or **all months** (grouped hits).
+- [x] Built **extensibly** — one `FIELDS` config array drives the form, the
+      field-scope dropdown, and matching; add a field there and it's wired.
 
-## Milestone 7 — Bulk import (backfill)  ⚠️ BLOCKED
-**Blocked on a sample of the real past-months notes.** Do not finalize the
-parser or let this milestone hold up Milestones 0–6.
-- [ ] Paste a block of text for a past month.
-- [ ] Forgiving parser extracts candidate titles (default: split on line
-      breaks and commas; strip "Day N:" prefixes and parenthetical notes).
-      **Tune to the actual sample before finalizing.**
-- [ ] Each candidate runs through the Milestone 2 pick-and-autopopulate flow.
-- [ ] Save resolved films into that month's marathon file (sequence order;
-      `dateWatched` optional).
+## Milestone 7 — Bulk import (backfill)  ⚠️ parser not final
+Built with the **default** rules; still needs tuning against a sample of the
+real past-months notes before it's trusted.
+- [x] Paste a block of text for a past month (month + optional theme).
+- [ ] Forgiving parser extracts candidate titles — default rules implemented
+      (split on line breaks and commas; strip "Day N:"/numbered/bulleted
+      prefixes and (parenthetical)/[bracketed] notes).
+      **Remaining: tune to the actual sample before finalizing.**
+- [x] Each candidate runs through the Milestone 2 pick-and-autopopulate flow
+      (per-title Find/Redo/Skip in a review list; nothing saves unconfirmed).
+- [x] Save resolved films into that month's marathon file (sequence order;
+      no `dateWatched`).
 
 ---
 
