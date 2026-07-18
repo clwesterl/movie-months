@@ -1,0 +1,1033 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Movie Months">
+<meta name="theme-color" content="#141210">
+<title>Movie Months</title>
+<style>
+  :root{
+    --bg:#141210; --panel:#1e1b18; --panel2:#26221e; --line:#332e28;
+    --text:#f0e9dc; --muted:#a1988a; --faint:#6e675c;
+    --gold:#d9a441; --gold-dim:#8a6a2f; --danger:#d96c5a;
+    --radius:14px; --shadow:0 18px 40px -22px rgba(0,0,0,.8);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0; padding:0}
+  body{
+    background:var(--bg); color:var(--text);
+    font:16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding-bottom:calc(110px + env(safe-area-inset-bottom));
+  }
+  .wrap{max-width:720px; margin:0 auto; padding:0 16px}
+
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:calc(14px + env(safe-area-inset-top)) 0 6px;
+  }
+  h1{
+    font-family:Georgia, "Times New Roman", serif; font-weight:600;
+    font-size:26px; margin:0; letter-spacing:.3px;
+  }
+  h1 .tick{color:var(--gold)}
+  .iconbtn{
+    background:var(--panel); border:1px solid var(--line); color:var(--muted);
+    border-radius:12px; min-width:44px; min-height:44px; font-size:19px; cursor:pointer;
+  }
+  .iconbtn:active{background:var(--panel2)}
+
+  .tabs{display:flex; gap:8px; margin:10px 0 14px}
+  .tab{
+    flex:1; min-height:46px; border-radius:12px; border:1px solid var(--line);
+    background:var(--panel); color:var(--muted); font-size:16px; cursor:pointer;
+  }
+  .tab.active{background:var(--gold); border-color:var(--gold); color:#231a08; font-weight:600}
+
+  .monthbar{display:flex; gap:8px; margin-bottom:10px}
+  select, input[type="text"], input[type="search"], input[type="date"], input[type="month"],
+  input[type="password"], input:not([type]), textarea{
+    background:var(--panel); border:1px solid var(--line); color:var(--text);
+    border-radius:12px; padding:11px 12px; font-size:16px; min-height:46px; width:100%;
+    appearance:none; -webkit-appearance:none; font-family:inherit;
+  }
+  select:focus, input:focus, textarea:focus{outline:none; border-color:var(--gold-dim)}
+  #monthSelect{flex:1}
+  .ghost{
+    background:transparent; border:1px solid var(--line); color:var(--muted);
+    border-radius:12px; padding:0 14px; min-height:46px; font-size:15px; cursor:pointer; white-space:nowrap;
+  }
+  .ghost:active{background:var(--panel)}
+
+  #themeInput{margin-bottom:8px; font-style:italic}
+  .progress{color:var(--faint); font-size:13.5px; margin:0 2px 12px}
+
+  .searchbar{display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap}
+  .searchbar input{flex:2 1 160px}
+  .searchbar select{flex:1 1 100px; width:auto}
+
+  .row{
+    display:flex; align-items:center; gap:12px;
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    padding:12px 14px; margin-bottom:8px; cursor:pointer;
+  }
+  .row:active{background:var(--panel2)}
+  .day{
+    font-family:Georgia, serif; font-size:20px; color:var(--gold);
+    min-width:38px; height:38px; border:1px solid var(--line); border-radius:10px;
+    display:flex; align-items:center; justify-content:center; flex:none; background:var(--bg);
+  }
+  .meat{flex:1; min-width:0}
+  .t{font-size:16.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis}
+  .t .yr{color:var(--muted); font-weight:400; font-size:14.5px}
+  .sub{color:var(--muted); font-size:13.5px; margin-top:2px; overflow:hidden; text-overflow:ellipsis}
+  .mo{color:var(--gold-dim); font-size:12.5px; margin-top:2px}
+  .imdb{
+    flex:none; color:var(--gold); text-decoration:none; font-size:12.5px; font-weight:700;
+    border:1px solid var(--gold-dim); border-radius:8px; padding:7px 9px;
+  }
+  .grouphead{
+    color:var(--faint); font-size:13px; text-transform:uppercase; letter-spacing:.08em;
+    margin:16px 2px 8px;
+  }
+  .empty{color:var(--faint); text-align:center; padding:36px 12px; font-size:15px}
+
+  .fab{
+    position:fixed; left:50%; transform:translateX(-50%);
+    bottom:calc(18px + env(safe-area-inset-bottom));
+    background:var(--gold); color:#231a08; border:none; border-radius:999px;
+    padding:15px 26px; font-size:17px; font-weight:700; cursor:pointer;
+    box-shadow:var(--shadow); min-height:52px; max-width:90vw; white-space:nowrap;
+  }
+  .fab:active{filter:brightness(.92)}
+
+  .nbAdd{display:flex; gap:8px; margin-bottom:14px}
+  .nbAdd input{flex:1}
+  .nbAdd button{
+    background:var(--gold); color:#231a08; border:none; border-radius:12px;
+    padding:0 18px; font-size:16px; font-weight:600; min-height:46px; cursor:pointer;
+  }
+  .note{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    padding:12px 14px; margin-bottom:8px; cursor:pointer; white-space:pre-wrap; word-break:break-word;
+  }
+  .note:active{background:var(--panel2)}
+  .note .when{color:var(--faint); font-size:12px; margin-top:4px}
+
+  .banner{
+    background:var(--panel); border:1px solid var(--gold-dim); border-radius:var(--radius);
+    padding:16px; margin:10px 0; text-align:center;
+  }
+  .banner p{margin:0 0 12px; color:var(--muted); font-size:15px}
+  .banner button{
+    background:var(--gold); color:#231a08; border:none; border-radius:12px;
+    padding:12px 20px; font-size:16px; font-weight:600; cursor:pointer;
+  }
+
+  .overlay{
+    position:fixed; inset:0; background:rgba(10,8,6,.72); z-index:50;
+    display:flex; align-items:flex-end; justify-content:center;
+    -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px);
+  }
+  .overlay.upper{z-index:60}
+  @media(min-width:640px){ .overlay{align-items:center} }
+  .modal{
+    background:var(--panel); border:1px solid var(--line); width:100%; max-width:560px;
+    border-radius:20px 20px 0 0; box-shadow:var(--shadow);
+    max-height:88vh; max-height:88dvh; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    padding:18px 18px calc(18px + env(safe-area-inset-bottom));
+  }
+  @media(min-width:640px){ .modal{border-radius:20px} }
+  .modal h2{
+    font-family:Georgia, serif; font-size:20px; font-weight:600; margin:0 0 14px;
+  }
+  .mhead{display:flex; align-items:center; justify-content:space-between; gap:10px}
+  .mhead h2{margin:0}
+  .x{background:none; border:none; color:var(--faint); font-size:24px; cursor:pointer; padding:6px 10px}
+  .field{margin-bottom:11px}
+  .field label{display:block; color:var(--muted); font-size:13px; margin:0 2px 5px}
+  .frow{display:flex; gap:10px}
+  .frow .field{flex:1}
+  .mbtns{display:flex; gap:10px; margin-top:16px}
+  .btn{
+    flex:1; min-height:48px; border-radius:12px; border:none; font-size:16px;
+    font-weight:600; cursor:pointer;
+  }
+  .btn.primary{background:var(--gold); color:#231a08}
+  .btn.plain{background:var(--panel2); color:var(--text); border:1px solid var(--line)}
+  .btn.danger{background:transparent; color:var(--danger); border:1px solid var(--danger); flex:0 0 auto; padding:0 16px}
+  .btn:disabled{opacity:.45; cursor:default}
+  .help{color:var(--faint); font-size:13px; margin:8px 2px; line-height:1.5}
+  .linky{background:none; border:none; color:var(--gold); font-size:14.5px; cursor:pointer; padding:8px 2px; text-decoration:underline}
+
+  .cand{
+    display:block; width:100%; text-align:left; background:var(--panel2);
+    border:1px solid var(--line); border-radius:12px; padding:11px 13px; margin-bottom:7px;
+    color:var(--text); font-size:15.5px; cursor:pointer;
+  }
+  .cand:active{border-color:var(--gold-dim)}
+  .cand .d{color:var(--muted); font-size:13.5px; margin-top:2px}
+  .searching{color:var(--faint); padding:14px 4px; font-size:14.5px}
+
+  .impItem{
+    background:var(--panel2); border:1px solid var(--line); border-radius:12px;
+    padding:10px 12px; margin-bottom:8px;
+  }
+  .impItem .top{display:flex; align-items:center; gap:8px}
+  .impItem .name{flex:1; font-size:15.5px; min-width:0; overflow:hidden; text-overflow:ellipsis}
+  .impItem.done .name{color:var(--text)}
+  .impItem.skipped .name{color:var(--faint); text-decoration:line-through}
+  .impItem .st{font-size:12.5px; color:var(--muted); margin-top:3px}
+  .impItem .st.ok{color:#8fbf7f}
+  .mini{
+    background:var(--bg); border:1px solid var(--line); color:var(--muted);
+    border-radius:9px; padding:8px 11px; font-size:13.5px; cursor:pointer; flex:none;
+  }
+  .mini:active{border-color:var(--gold-dim)}
+
+  .toast{
+    position:fixed; left:50%; transform:translateX(-50%);
+    bottom:calc(84px + env(safe-area-inset-bottom)); z-index:80;
+    background:#2b2620; border:1px solid var(--line); color:var(--text);
+    border-radius:12px; padding:11px 18px; font-size:14.5px; box-shadow:var(--shadow);
+    max-width:88vw; text-align:center;
+  }
+  .toast.bad{border-color:var(--danger)}
+  .spin{
+    display:inline-block; width:14px; height:14px; border:2px solid var(--faint);
+    border-top-color:var(--gold); border-radius:50%; animation:sp .8s linear infinite;
+    vertical-align:-2px; margin-right:7px;
+  }
+  @keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><span class="tick">▮</span> Movie Months</h1>
+    <button id="settingsBtn" class="iconbtn" title="Settings">⚙</button>
+  </header>
+
+  <div id="setupBanner" class="banner" hidden>
+    <p>Connect to GitHub to load and save your marathons. You'll need the shared access token.</p>
+    <button id="setupBtn">Set up</button>
+  </div>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="marathon">Marathon</button>
+    <button class="tab" data-tab="notebook">Notebook</button>
+  </nav>
+
+  <section id="view-marathon">
+    <div class="monthbar">
+      <select id="monthSelect"></select>
+      <button id="importBtn" class="ghost">Import…</button>
+    </div>
+    <input id="themeInput" type="text" placeholder="Theme for this month (optional)" autocomplete="off">
+    <div id="progress" class="progress"></div>
+    <div class="searchbar">
+      <input id="searchInput" type="search" placeholder="Search movies…" autocomplete="off">
+      <select id="fieldSelect"></select>
+      <select id="scopeSelect">
+        <option value="month">This month</option>
+        <option value="all">All months</option>
+      </select>
+    </div>
+    <div id="entryList"></div>
+  </section>
+
+  <section id="view-notebook" hidden>
+    <div class="nbAdd">
+      <input id="nbInput" type="text" placeholder="Jot an idea… (director, decade, country, anything)" autocomplete="off">
+      <button id="nbAddBtn">Add</button>
+    </div>
+    <div id="nbList"></div>
+  </section>
+</div>
+
+<button id="addBtn" class="fab">＋ Add today’s movie</button>
+
+<div id="overlay" class="overlay" hidden><div class="modal" id="modalBox"></div></div>
+<div id="pickerOverlay" class="overlay upper" hidden><div class="modal" id="pickerBox"></div></div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+'use strict';
+/* ============================== helpers ============================== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g,
+  c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function todayISO(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+const currentMonthKey = () => todayISO().slice(0,7);
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function monthLabel(key){
+  const [y,m] = key.split('-');
+  return (MONTHS[+m-1] || m) + ' ' + y;
+}
+function daysInMonth(key){
+  const [y,m] = key.split('-').map(Number);
+  return new Date(y, m, 0).getDate();
+}
+let toastTimer = null;
+function toast(msg, bad){
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (bad ? ' bad' : '');
+  t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.hidden = true; }, bad ? 5000 : 2600);
+}
+function showErr(e){
+  if (e && e.code === 'auth') toast('GitHub rejected the token — check Settings ⚙', true);
+  else if (e && e.code === 'norepo') toast('Data repo not reachable — check Settings ⚙', true);
+  else if (e && e.code === 'wikidata') toast('Wikidata is unreachable right now', true);
+  else if (e instanceof TypeError) toast('Network error — are you offline?', true);
+  else toast('That didn’t save (HTTP ' + ((e && e.status) || '?') + ') — try again', true);
+  console.error(e);
+}
+function b64encode(str){
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  bytes.forEach(b => bin += String.fromCharCode(b));
+  return btoa(bin);
+}
+function b64decode(b64){
+  const bin = atob(String(b64).replace(/\s/g,''));
+  return new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0)));
+}
+
+/* ============================== config ============================== */
+const LS = { token:'mm_token', owner:'mm_owner', repo:'mm_repo' };
+function cfgGet(k, d){ try{ const v = localStorage.getItem(LS[k]); return v == null || v === '' ? d : v; }catch(e){ return d; } }
+function cfgSet(k, v){ try{ localStorage.setItem(LS[k], v); }catch(e){} }
+const gh = () => ({ token:cfgGet('token',''), owner:cfgGet('owner','clwesterl'), repo:cfgGet('repo','movie-months-data') });
+const ghConfigured = () => { const c = gh(); return !!(c.token && c.owner && c.repo); };
+
+/* ======================= GitHub Contents API ======================== */
+const NOTEBOOK_PATH = 'notebook.json';
+const marathonPath = key => 'marathons/' + key + '.json';
+function ghUrl(path){
+  const c = gh();
+  return 'https://api.github.com/repos/' + encodeURIComponent(c.owner) + '/' + encodeURIComponent(c.repo) +
+         '/contents/' + path.split('/').map(encodeURIComponent).join('/');
+}
+function ghHeaders(){
+  return {
+    'Authorization':'Bearer ' + gh().token,
+    'Accept':'application/vnd.github+json',
+    'X-GitHub-Api-Version':'2022-11-28'
+  };
+}
+function ghError(res){
+  if (res.status === 401 || res.status === 403) return { code:'auth', status:res.status };
+  if (res.status === 409) return { code:'conflict', status:409 };
+  return { code:'http', status:res.status };
+}
+// -> {doc, sha} or null when the file doesn't exist yet
+async function ghGetFile(path){
+  const res = await fetch(ghUrl(path), { headers:ghHeaders(), cache:'no-store' });
+  if (res.status === 404) return null;
+  if (!res.ok) throw ghError(res);
+  const j = await res.json();
+  return { doc: JSON.parse(b64decode(j.content)), sha: j.sha };
+}
+async function ghPutFile(path, doc, sha, message){
+  const body = { message, content: b64encode(JSON.stringify(doc, null, 2)) };
+  if (sha) body.sha = sha;
+  const res = await fetch(ghUrl(path), {
+    method:'PUT',
+    headers: Object.assign({'Content-Type':'application/json'}, ghHeaders()),
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw ghError(res);
+  const j = await res.json();
+  return j.content && j.content.sha;
+}
+// -> [] when the directory doesn't exist yet
+async function ghListDir(path){
+  const res = await fetch(ghUrl(path), { headers:ghHeaders(), cache:'no-store' });
+  if (res.status === 404) return [];
+  if (!res.ok) throw ghError(res);
+  return res.json();
+}
+// read-mutate-write; refetches once on a sha conflict (two devices, one file)
+async function updateFile(path, emptyDoc, mutate, message){
+  for (let attempt = 0; attempt < 2; attempt++){
+    const cur = await ghGetFile(path);
+    const doc = cur ? cur.doc : JSON.parse(JSON.stringify(emptyDoc));
+    mutate(doc);
+    try{
+      const sha = await ghPutFile(path, doc, cur && cur.sha, message);
+      return { doc, sha };
+    }catch(e){
+      if (e && e.code === 'conflict' && attempt === 0) continue;
+      throw e;
+    }
+  }
+}
+
+/* ============================ Wikidata ============================== */
+const WD_API = 'https://www.wikidata.org/w/api.php';
+async function wdApi(params){
+  const q = new URLSearchParams(Object.assign({ format:'json', origin:'*' }, params));
+  let res;
+  try{ res = await fetch(WD_API + '?' + q); }
+  catch(e){ throw { code:'wikidata' }; }
+  if (!res.ok) throw { code:'wikidata', status:res.status };
+  return res.json();
+}
+async function wdSearch(text){
+  const j = await wdApi({ action:'wbsearchentities', search:text, language:'en', uselang:'en', type:'item', limit:'20' });
+  const all = (j.search || []).map(r => ({ id:r.id, label:r.label || '', description:r.description || '' }));
+  const isFilm = r => /\bfilms?\b|\bmovie\b/i.test(r.description);
+  return all.filter(isFilm).concat(all.filter(r => !isFilm(r)));
+}
+function claimValues(claims, p){
+  return (claims[p] || [])
+    .map(c => c.mainsnak && c.mainsnak.datavalue && c.mainsnak.datavalue.value)
+    .filter(v => v != null);
+}
+async function wdResolve(id, fallbackLabel){
+  const j = await wdApi({ action:'wbgetentities', ids:id, props:'claims|labels', languages:'en' });
+  const ent = j.entities && j.entities[id];
+  const claims = (ent && ent.claims) || {};
+  const title = (ent && ent.labels && ent.labels.en && ent.labels.en.value) || fallbackLabel || '';
+  const years = claimValues(claims, 'P577')
+    .map(v => v.time && parseInt(String(v.time).slice(1,5), 10))
+    .filter(n => n && n > 1800);
+  const year = years.length ? Math.min(...years) : '';
+  const qids = {
+    director: claimValues(claims,'P57').map(v => v.id).filter(Boolean),
+    country:  claimValues(claims,'P495').map(v => v.id).filter(Boolean),
+    genre:    claimValues(claims,'P136').map(v => v.id).filter(Boolean)
+  };
+  const uniq = [...new Set([].concat(qids.director, qids.country, qids.genre))];
+  const labels = {};
+  if (uniq.length){
+    const lj = await wdApi({ action:'wbgetentities', ids:uniq.join('|'), props:'labels', languages:'en' });
+    for (const q of uniq){
+      const e = lj.entities && lj.entities[q];
+      labels[q] = (e && e.labels && e.labels.en && e.labels.en.value) || q;
+    }
+  }
+  const names = a => a.map(q => labels[q]).join(', ');
+  const imdb = claimValues(claims,'P345').find(v => typeof v === 'string') || '';
+  return {
+    title, year,
+    country: names(qids.country),
+    director: names(qids.director),
+    genre: names(qids.genre),
+    imdbId: imdb
+  };
+}
+
+/* ====================== fields (filter config) ====================== */
+// Extensible: add a field here and it shows up in the form, the search
+// scope dropdown, and free-text matching. No other wiring needed.
+const FIELDS = [
+  { key:'title',       label:'Title' },
+  { key:'year',        label:'Year' },
+  { key:'country',     label:'Country' },
+  { key:'director',    label:'Director' },
+  { key:'genre',       label:'Genre' },
+  { key:'dateWatched', label:'Date watched' }
+];
+function entryMatches(e, q, fieldKey){
+  if (!q) return true;
+  const ql = q.toLowerCase();
+  const keys = fieldKey === 'all' ? FIELDS.map(f => f.key) : [fieldKey];
+  return keys.some(k => String(e[k] == null ? '' : e[k]).toLowerCase().includes(ql));
+}
+
+/* ============================== state =============================== */
+const state = {
+  tab:'marathon',
+  monthKey: currentMonthKey(),
+  months: [],            // month keys that exist in the repo, newest first
+  docs: {},              // monthKey -> {doc, sha|null}
+  notebook: { entries: [] },
+  connected: false,
+  loading: false,
+  query:'', field:'all', scope:'month',
+  loadingAll:false, allLoaded:false
+};
+const emptyMonthDoc = key => ({ month:key, theme:'', entries:[] });
+
+async function loadMonths(){
+  const items = await ghListDir('marathons');
+  state.months = items
+    .filter(i => /^\d{4}-\d{2}\.json$/.test(i.name))
+    .map(i => i.name.slice(0,7))
+    .sort().reverse();
+}
+async function loadMonth(key, force){
+  if (!force && state.docs[key]) return state.docs[key];
+  const r = await ghGetFile(marathonPath(key));
+  state.docs[key] = r ? r : { doc: emptyMonthDoc(key), sha:null };
+  return state.docs[key];
+}
+async function loadNotebook(){
+  const r = await ghGetFile(NOTEBOOK_PATH);
+  state.notebook = r ? r.doc : { entries: [] };
+}
+async function loadAll(){
+  if (!ghConfigured()) return;
+  state.loading = true;
+  render();
+  try{
+    await Promise.all([loadMonths(), loadMonth(state.monthKey, true), loadNotebook()]);
+    state.connected = true;
+  }catch(e){
+    state.connected = false;
+    showErr(e);
+  }
+  state.loading = false;
+  render();
+}
+async function ensureAllMonthsLoaded(){
+  if (state.allLoaded || state.loadingAll) return;
+  state.loadingAll = true;
+  try{
+    await Promise.all(state.months.map(k => loadMonth(k)));
+    state.allLoaded = true;
+  }catch(e){
+    showErr(e);
+  }
+  state.loadingAll = false;
+  render();
+}
+
+/* ============================== writes ============================== */
+async function writeMonth(key, mutate, message){
+  const r = await updateFile(marathonPath(key), emptyMonthDoc(key), mutate, message);
+  state.docs[key] = r;
+  if (!state.months.includes(key)){
+    state.months.push(key);
+    state.months.sort();
+    state.months.reverse();
+  }
+  render();
+}
+async function writeNotebook(mutate, message){
+  const r = await updateFile(NOTEBOOK_PATH, { entries: [] }, mutate, message);
+  state.notebook = r.doc;
+  render();
+}
+
+/* ============================== render ============================== */
+function seqDay(entries, i){
+  const e = entries[i];
+  if (e.dateWatched && /^\d{4}-\d{2}-\d{2}/.test(e.dateWatched)){
+    const d = parseInt(e.dateWatched.slice(8,10), 10);
+    if (d) return d;
+  }
+  return i + 1;
+}
+function entryRowHtml(e, i, key, showMonth){
+  const day = seqDay((state.docs[key] ? state.docs[key].doc.entries : []), i);
+  const sub = [e.director, e.country, e.genre].filter(Boolean).join(' · ');
+  return '<div class="row" data-key="' + esc(key) + '" data-i="' + i + '">' +
+    '<div class="day">' + day + '</div>' +
+    '<div class="meat">' +
+      '<div class="t">' + esc(e.title) + (e.year ? ' <span class="yr">' + esc(e.year) + '</span>' : '') + '</div>' +
+      (sub ? '<div class="sub">' + esc(sub) + '</div>' : '') +
+      (showMonth ? '<div class="mo">' + esc(monthLabel(key)) + '</div>' : '') +
+    '</div>' +
+    (e.imdbId ? '<a class="imdb" target="_blank" rel="noopener" href="https://www.imdb.com/title/' +
+      encodeURIComponent(e.imdbId) + '/">IMDb</a>' : '') +
+  '</div>';
+}
+function renderMonthSelect(){
+  const keys = [...new Set([currentMonthKey(), state.monthKey, ...state.months])].sort().reverse();
+  $('monthSelect').innerHTML = keys.map(k =>
+    '<option value="' + esc(k) + '"' + (k === state.monthKey ? ' selected' : '') + '>' +
+    esc(monthLabel(k)) + (k === currentMonthKey() ? ' · current' : '') + '</option>'
+  ).join('');
+}
+function renderFieldSelect(){
+  $('fieldSelect').innerHTML =
+    '<option value="all">All fields</option>' +
+    FIELDS.map(f => '<option value="' + f.key + '"' + (state.field === f.key ? ' selected' : '') + '>' +
+      esc(f.label) + '</option>').join('');
+}
+function renderEntryList(){
+  const box = $('entryList');
+  if (state.loading){ box.innerHTML = '<div class="empty"><span class="spin"></span>Loading…</div>'; return; }
+  if (state.scope === 'all' && state.query){
+    if (!state.allLoaded){
+      ensureAllMonthsLoaded();
+      box.innerHTML = '<div class="empty"><span class="spin"></span>Loading every month…</div>';
+      return;
+    }
+    const keys = [...new Set([...state.months, currentMonthKey()])].sort().reverse();
+    let html = '', hits = 0;
+    for (const k of keys){
+      const d = state.docs[k];
+      if (!d) continue;
+      const rows = d.doc.entries
+        .map((e, i) => ({ e, i }))
+        .filter(x => entryMatches(x.e, state.query, state.field));
+      if (!rows.length) continue;
+      hits += rows.length;
+      html += '<div class="grouphead">' + esc(monthLabel(k)) + '</div>' +
+              rows.map(x => entryRowHtml(x.e, x.i, k, false)).join('');
+    }
+    box.innerHTML = html || '<div class="empty">No matches in any month.</div>';
+    return;
+  }
+  const cur = state.docs[state.monthKey];
+  const entries = cur ? cur.doc.entries : [];
+  const rows = entries
+    .map((e, i) => ({ e, i }))
+    .filter(x => entryMatches(x.e, state.query, state.field));
+  if (!entries.length){
+    box.innerHTML = '<div class="empty">' + (state.connected ?
+      'No movies yet this month.<br>Tap below to add today’s.' :
+      'Connect GitHub (⚙) to load your marathons.') + '</div>';
+  }else if (!rows.length){
+    box.innerHTML = '<div class="empty">Nothing matches that search.</div>';
+  }else{
+    box.innerHTML = rows.map(x => entryRowHtml(x.e, x.i, state.monthKey, false)).join('');
+  }
+}
+function renderMarathon(){
+  renderMonthSelect();
+  const cur = state.docs[state.monthKey];
+  const themeEl = $('themeInput');
+  if (document.activeElement !== themeEl) themeEl.value = cur ? (cur.doc.theme || '') : '';
+  const n = cur ? cur.doc.entries.length : 0;
+  const isCurrent = state.monthKey === currentMonthKey();
+  let prog = n + (n === 1 ? ' movie' : ' movies') + ' · ' + daysInMonth(state.monthKey) + ' days';
+  if (isCurrent) prog += ' · today is day ' + parseInt(todayISO().slice(8,10), 10);
+  $('progress').textContent = prog;
+  $('addBtn').textContent = isCurrent ? '＋ Add today’s movie' : '＋ Add a movie';
+  renderEntryList();
+}
+function renderNotebook(){
+  const list = state.notebook.entries || [];
+  $('nbList').innerHTML = list.length ?
+    list.map((e, i) =>
+      '<div class="note" data-i="' + i + '">' + esc(e.text) +
+      (e.added ? '<div class="when">' + esc(String(e.added).slice(0,10)) + '</div>' : '') +
+      '</div>').join('') :
+    '<div class="empty">Nothing jotted yet.<br>Directors, decades, countries, stray ideas — anything.</div>';
+}
+function render(){
+  $('setupBanner').hidden = ghConfigured();
+  document.querySelectorAll('.tab').forEach(b =>
+    b.classList.toggle('active', b.dataset.tab === state.tab));
+  $('view-marathon').hidden = state.tab !== 'marathon';
+  $('view-notebook').hidden = state.tab !== 'notebook';
+  $('addBtn').hidden = state.tab !== 'marathon';
+  if (state.tab === 'marathon') renderMarathon(); else renderNotebook();
+}
+
+/* ============================== modals ============================== */
+function openModal(html){ $('modalBox').innerHTML = html; $('overlay').hidden = false; }
+function closeModal(){ $('overlay').hidden = true; $('modalBox').innerHTML = ''; }
+function openPickerModal(html){ $('pickerBox').innerHTML = html; $('pickerOverlay').hidden = false; }
+function closePicker(){ $('pickerOverlay').hidden = true; $('pickerBox').innerHTML = ''; }
+
+/* Wikidata picker: search box + candidate list; onPick(resolvedEntry) */
+function openPicker(prefill, onPick){
+  openPickerModal(
+    '<div class="mhead"><h2>Find the film</h2><button class="x" id="pkClose">×</button></div>' +
+    '<div class="field"><input id="pkQuery" type="search" placeholder="Title…" autocomplete="off" value="' + esc(prefill || '') + '"></div>' +
+    '<div id="pkResults"></div>' +
+    '<p class="help">Results come from Wikidata. Pick the right one — the description tells them apart (year, director).</p>'
+  );
+  const input = $('pkQuery');
+  const results = $('pkResults');
+  let seq = 0;
+  async function run(){
+    const q = input.value.trim();
+    if (!q){ results.innerHTML = ''; return; }
+    const mySeq = ++seq;
+    results.innerHTML = '<div class="searching"><span class="spin"></span>Searching…</div>';
+    let cands;
+    try{ cands = await wdSearch(q); }
+    catch(e){ if (mySeq === seq) results.innerHTML = '<div class="searching">Wikidata unreachable — try again.</div>'; return; }
+    if (mySeq !== seq) return;
+    results.innerHTML = cands.length ?
+      cands.map((c, i) =>
+        '<button class="cand" data-i="' + i + '"><div>' + esc(c.label) + '</div>' +
+        '<div class="d">' + esc(c.description || 'no description') + '</div></button>').join('') :
+      '<div class="searching">Nothing found — check the spelling, or add it manually.</div>';
+    results.querySelectorAll('.cand').forEach(btn => btn.addEventListener('click', async () => {
+      const c = cands[+btn.dataset.i];
+      results.innerHTML = '<div class="searching"><span class="spin"></span>Fetching details…</div>';
+      try{
+        const entry = await wdResolve(c.id, c.label);
+        closePicker();
+        onPick(entry);
+      }catch(e){
+        showErr(e);
+        run();
+      }
+    }));
+  }
+  let deb = null;
+  input.addEventListener('input', () => { clearTimeout(deb); deb = setTimeout(run, 400); });
+  input.addEventListener('keydown', ev => { if (ev.key === 'Enter'){ clearTimeout(deb); run(); } });
+  $('pkClose').addEventListener('click', closePicker);
+  if (prefill) run();
+  setTimeout(() => input.focus(), 60);
+}
+
+/* Entry form: every field editable. onSave(entry), optional onDelete() */
+function openEntryForm(opts){
+  const e = opts.entry || {};
+  const fieldHtml = (key, label, extra) =>
+    '<div class="field"><label>' + label + '</label>' +
+    '<input id="f_' + key + '" type="text" ' + (extra || '') + ' value="' + esc(e[key] == null ? '' : e[key]) + '" autocomplete="off"></div>';
+  openModal(
+    '<div class="mhead"><h2>' + esc(opts.title || 'Movie') + '</h2><button class="x" id="efClose">×</button></div>' +
+    fieldHtml('title','Title') +
+    '<div class="frow">' +
+      fieldHtml('year','Year','inputmode="numeric"') +
+      '<div class="field"><label>Date watched</label><input id="f_dateWatched" type="date" value="' + esc(e.dateWatched || '') + '"></div>' +
+    '</div>' +
+    fieldHtml('director','Director') +
+    fieldHtml('country','Country') +
+    fieldHtml('genre','Genre') +
+    fieldHtml('imdbId','IMDb ID','placeholder="tt0069293"') +
+    (opts.searchAgain ? '<button class="linky" id="efSearch">↻ Search Wikidata instead</button>' : '') +
+    '<div class="mbtns">' +
+      (opts.onDelete ? '<button class="btn danger" id="efDelete">Delete</button>' : '') +
+      '<button class="btn plain" id="efCancel">Cancel</button>' +
+      '<button class="btn primary" id="efSave">Save</button>' +
+    '</div>'
+  );
+  $('efClose').addEventListener('click', closeModal);
+  $('efCancel').addEventListener('click', closeModal);
+  if (opts.searchAgain) $('efSearch').addEventListener('click', () =>
+    openPicker($('f_title').value.trim(), entry => {
+      for (const f of FIELDS){ if (f.key !== 'dateWatched' && entry[f.key] != null) $('f_' + f.key).value = entry[f.key]; }
+      $('f_imdbId').value = entry.imdbId || '';
+    }));
+  if (opts.onDelete) $('efDelete').addEventListener('click', () => {
+    if (confirm('Delete “' + ($('f_title').value.trim() || 'this movie') + '” from the month?')){
+      closeModal();
+      opts.onDelete();
+    }
+  });
+  $('efSave').addEventListener('click', () => {
+    const out = {};
+    for (const f of FIELDS){
+      const v = $('f_' + f.key).value.trim();
+      if (f.key === 'year'){ out.year = v ? (parseInt(v,10) || v) : ''; }
+      else if (f.key === 'dateWatched'){ if (v) out.dateWatched = v; }
+      else out[f.key] = v;
+    }
+    out.imdbId = $('f_imdbId').value.trim();
+    if (!out.title){ toast('A title is required', true); return; }
+    closeModal();
+    opts.onSave(out);
+  });
+}
+
+/* ============================ live add ============================== */
+function startAddFlow(){
+  if (!ghConfigured()){ openSettings(); return; }
+  const key = state.monthKey;
+  const isCurrent = key === currentMonthKey();
+  openPicker('', picked => {
+    if (isCurrent && !picked.dateWatched) picked.dateWatched = todayISO();
+    openEntryForm({
+      title:'Add to ' + monthLabel(key),
+      entry: picked,
+      searchAgain: true,
+      onSave: entry => saveNewEntry(key, entry)
+    });
+  });
+  // manual escape hatch under the picker
+  $('pkResults').insertAdjacentHTML('afterend',
+    '<button class="linky" id="pkManual">Skip the lookup — type it in manually</button>');
+  $('pkManual').addEventListener('click', () => {
+    closePicker();
+    openEntryForm({
+      title:'Add to ' + monthLabel(key),
+      entry: isCurrent ? { dateWatched: todayISO() } : {},
+      searchAgain: true,
+      onSave: entry => saveNewEntry(key, entry)
+    });
+  });
+}
+async function saveNewEntry(key, entry){
+  try{
+    await writeMonth(key, doc => doc.entries.push(entry),
+      'Add “' + entry.title + '” to ' + key);
+    toast('Added ' + entry.title);
+  }catch(e){ showErr(e); }
+}
+function openEditEntry(key, index){
+  const d = state.docs[key];
+  if (!d || !d.doc.entries[index]) return;
+  openEntryForm({
+    title:'Edit · ' + monthLabel(key),
+    entry: d.doc.entries[index],
+    searchAgain: true,
+    onSave: async entry => {
+      try{
+        await writeMonth(key, doc => { if (doc.entries[index]) doc.entries[index] = entry; },
+          'Edit “' + entry.title + '” (' + key + ')');
+        toast('Saved');
+      }catch(e){ showErr(e); }
+    },
+    onDelete: async () => {
+      const title = d.doc.entries[index].title;
+      try{
+        await writeMonth(key, doc => { doc.entries.splice(index, 1); },
+          'Delete “' + title + '” (' + key + ')');
+        toast('Deleted ' + title);
+      }catch(e){ showErr(e); }
+    }
+  });
+}
+
+/* ============================== import ============================== */
+// Default parser rules — split on line breaks and commas, strip "Day N:"
+// prefixes and (parenthetical notes). Tune against the real notes sample
+// before trusting it too much; every miss is fixable in the review list.
+function parseImportText(text){
+  const items = [];
+  for (let line of String(text).split(/\r?\n/)){
+    line = line.trim();
+    if (!line) continue;
+    line = line.replace(/^day\s*\d+\s*[:.\-–—)]?\s*/i, '');
+    line = line.replace(/^\d{1,2}\s*[:.)\-–—]\s*/, '');
+    line = line.replace(/\([^)]*\)/g, ' ').replace(/\[[^\]]*\]/g, ' ');
+    for (let part of line.split(',')){
+      part = part.replace(/^[-–—•*·]+\s*/, '').replace(/\s+/g, ' ').trim();
+      if (!part) continue;
+      if (/^\d{1,4}$/.test(part)) continue;
+      items.push({ raw: part, title: part, status:'pending', entry: null });
+    }
+  }
+  return items;
+}
+let imp = null; // { monthKey, theme, items }
+function openImport(){
+  if (!ghConfigured()){ openSettings(); return; }
+  imp = null;
+  const d = new Date();
+  d.setMonth(d.getMonth() - 1);
+  const lastMonth = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  openModal(
+    '<div class="mhead"><h2>Import a past month</h2><button class="x" id="imClose">×</button></div>' +
+    '<div class="frow">' +
+      '<div class="field"><label>Month</label><input id="imMonth" type="month" value="' + lastMonth + '"></div>' +
+      '<div class="field"><label>Theme (optional)</label><input id="imTheme" type="text" autocomplete="off"></div>' +
+    '</div>' +
+    '<div class="field"><label>Paste the month’s list</label>' +
+      '<textarea id="imText" rows="7" placeholder="Day 1: Solaris (Tarkovsky)&#10;Day 2: Stalker&#10;…"></textarea></div>' +
+    '<div class="mbtns"><button class="btn primary" id="imParse">Find the films</button></div>' +
+    '<p class="help">Each line (or comma-separated title) becomes a candidate. You’ll confirm every match against Wikidata before anything is saved — order is kept, no dates needed.</p>'
+  );
+  $('imClose').addEventListener('click', closeModal);
+  $('imParse').addEventListener('click', () => {
+    const monthKey = $('imMonth').value;
+    if (!/^\d{4}-\d{2}$/.test(monthKey)){ toast('Pick a month first', true); return; }
+    const items = parseImportText($('imText').value);
+    if (!items.length){ toast('Nothing to import — paste the list first', true); return; }
+    imp = { monthKey, theme: $('imTheme').value.trim(), items };
+    renderImportReview();
+  });
+}
+function renderImportReview(){
+  const done = imp.items.filter(i => i.status === 'done').length;
+  const skipped = imp.items.filter(i => i.status === 'skipped').length;
+  openModal(
+    '<div class="mhead"><h2>' + esc(monthLabel(imp.monthKey)) + ' · ' + done + '/' +
+      (imp.items.length - skipped) + ' matched</h2><button class="x" id="irClose">×</button></div>' +
+    '<div id="irList">' +
+    imp.items.map((it, i) => {
+      const st = it.status === 'done' ?
+          '<div class="st ok">✓ ' + esc(it.entry.title) + (it.entry.year ? ' (' + esc(it.entry.year) + ')' : '') +
+          (it.entry.director ? ' — ' + esc(it.entry.director) : '') + '</div>' :
+        it.status === 'skipped' ? '<div class="st">skipped</div>' :
+          '<div class="st">not matched yet</div>';
+      return '<div class="impItem ' + it.status + '">' +
+        '<div class="top"><div class="name">' + esc(it.title) + '</div>' +
+          (it.status === 'skipped' ?
+            '<button class="mini" data-act="unskip" data-i="' + i + '">Undo</button>' :
+            '<button class="mini" data-act="find" data-i="' + i + '">' + (it.status === 'done' ? 'Redo' : 'Find') + '</button>' +
+            '<button class="mini" data-act="skip" data-i="' + i + '">Skip</button>') +
+        '</div>' + st + '</div>';
+    }).join('') +
+    '</div>' +
+    '<div class="mbtns">' +
+      '<button class="btn plain" id="irBack">Back</button>' +
+      '<button class="btn primary" id="irSave"' + (done ? '' : ' disabled') + '>Save ' + done + ' film' + (done === 1 ? '' : 's') + '</button>' +
+    '</div>' +
+    '<p class="help">“Find” opens the Wikidata match list for that title. Unmatched or skipped lines simply aren’t saved.</p>'
+  );
+  $('irClose').addEventListener('click', () => { if (confirm('Abandon this import?')) closeModal(); });
+  $('irBack').addEventListener('click', openImport);
+  document.querySelectorAll('#irList .mini').forEach(btn => btn.addEventListener('click', () => {
+    const i = +btn.dataset.i, act = btn.dataset.act, it = imp.items[i];
+    if (act === 'skip'){ it.status = 'skipped'; renderImportReview(); }
+    else if (act === 'unskip'){ it.status = it.entry ? 'done' : 'pending'; renderImportReview(); }
+    else openPicker(it.title, entry => { it.entry = entry; it.status = 'done'; renderImportReview(); });
+  }));
+  $('irSave').addEventListener('click', async () => {
+    const films = imp.items.filter(i => i.status === 'done').map(i => i.entry);
+    const pending = imp.items.filter(i => i.status === 'pending').length;
+    if (pending && !confirm(pending + ' title' + (pending === 1 ? '' : 's') + ' still unmatched — save without them?')) return;
+    const { monthKey, theme } = imp;
+    try{
+      await writeMonth(monthKey, doc => {
+        if (theme) doc.theme = theme;
+        doc.entries = doc.entries.concat(films);
+      }, 'Import ' + films.length + ' films into ' + monthKey);
+      closeModal();
+      state.monthKey = monthKey;
+      state.allLoaded = false;
+      render();
+      toast('Imported ' + films.length + ' films into ' + monthLabel(monthKey));
+    }catch(e){ showErr(e); }
+  });
+}
+
+/* ============================ settings ============================== */
+function openSettings(){
+  const c = gh();
+  openModal(
+    '<div class="mhead"><h2>Settings</h2><button class="x" id="stClose">×</button></div>' +
+    '<p class="help">Marathons and the notebook live as JSON in a private GitHub repo. Paste the shared fine-grained token (Contents: read &amp; write on the data repo). Nothing leaves this browser except calls to api.github.com and wikidata.org.</p>' +
+    '<div class="field"><label>Access token</label><input id="stToken" type="password" value="' + esc(c.token) + '" placeholder="github_pat_…" autocomplete="off"></div>' +
+    '<div class="frow">' +
+      '<div class="field"><label>Owner</label><input id="stOwner" type="text" value="' + esc(c.owner) + '" autocomplete="off"></div>' +
+      '<div class="field"><label>Data repo</label><input id="stRepo" type="text" value="' + esc(c.repo) + '" autocomplete="off"></div>' +
+    '</div>' +
+    '<div class="mbtns"><button class="btn plain" id="stCancel">Cancel</button>' +
+    '<button class="btn primary" id="stSave">Save &amp; connect</button></div>' +
+    '<p class="help" id="stNote"></p>'
+  );
+  $('stClose').addEventListener('click', closeModal);
+  $('stCancel').addEventListener('click', closeModal);
+  $('stSave').addEventListener('click', async () => {
+    cfgSet('token', $('stToken').value.trim());
+    cfgSet('owner', $('stOwner').value.trim() || 'clwesterl');
+    cfgSet('repo', $('stRepo').value.trim() || 'movie-months-data');
+    const note = $('stNote');
+    note.innerHTML = '<span class="spin"></span>Checking the repo…';
+    try{
+      const cc = gh();
+      const res = await fetch('https://api.github.com/repos/' + encodeURIComponent(cc.owner) + '/' +
+        encodeURIComponent(cc.repo), { headers: ghHeaders(), cache:'no-store' });
+      if (res.status === 401 || res.status === 403){
+        note.textContent = 'Token rejected (HTTP ' + res.status + '). Check the token, its expiry, and that it grants Contents: read/write on ' + cc.owner + '/' + cc.repo + '.';
+        return;
+      }
+      if (res.status === 404){
+        note.textContent = 'Repo not found with this token. Confirm ' + cc.owner + '/' + cc.repo + ' exists and the token’s repository access includes it (Only select repositories → tick it).';
+        return;
+      }
+      if (!res.ok){ note.textContent = 'Could not reach GitHub (HTTP ' + res.status + ').'; return; }
+      closeModal();
+      toast('Connected');
+      state.docs = {};
+      state.allLoaded = false;
+      loadAll();
+    }catch(e){
+      note.textContent = 'Network error — are you online?';
+    }
+  });
+}
+
+/* ============================== wiring ============================== */
+function init(){
+  document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => {
+    state.tab = b.dataset.tab;
+    render();
+  }));
+  $('settingsBtn').addEventListener('click', openSettings);
+  $('setupBtn').addEventListener('click', openSettings);
+  $('addBtn').addEventListener('click', startAddFlow);
+  $('importBtn').addEventListener('click', openImport);
+
+  $('monthSelect').addEventListener('change', async ev => {
+    state.monthKey = ev.target.value;
+    render();
+    if (ghConfigured()){
+      try{ await loadMonth(state.monthKey); }catch(e){ showErr(e); }
+      render();
+    }
+  });
+  $('themeInput').addEventListener('change', async ev => {
+    if (!ghConfigured()) return;
+    const v = ev.target.value.trim();
+    const cur = state.docs[state.monthKey];
+    if (cur && (cur.doc.theme || '') === v) return;
+    try{
+      await writeMonth(state.monthKey, doc => { doc.theme = v; }, 'Set theme for ' + state.monthKey);
+      toast('Theme saved');
+    }catch(e){ showErr(e); }
+  });
+
+  let deb = null;
+  $('searchInput').addEventListener('input', ev => {
+    clearTimeout(deb);
+    deb = setTimeout(() => { state.query = ev.target.value.trim(); renderEntryList(); }, 250);
+  });
+  $('fieldSelect').addEventListener('change', ev => { state.field = ev.target.value; renderEntryList(); });
+  $('scopeSelect').addEventListener('change', ev => { state.scope = ev.target.value; renderEntryList(); });
+
+  $('entryList').addEventListener('click', ev => {
+    if (ev.target.closest('a')) return;
+    const row = ev.target.closest('.row');
+    if (row) openEditEntry(row.dataset.key, +row.dataset.i);
+  });
+
+  $('nbAddBtn').addEventListener('click', addNote);
+  $('nbInput').addEventListener('keydown', ev => { if (ev.key === 'Enter') addNote(); });
+  $('nbList').addEventListener('click', async ev => {
+    const note = ev.target.closest('.note');
+    if (!note) return;
+    const i = +note.dataset.i;
+    const e = state.notebook.entries[i];
+    if (!e) return;
+    if (!confirm('Delete this note?\n\n“' + e.text + '”')) return;
+    try{
+      await writeNotebook(doc => {
+        const idx = doc.entries.findIndex(x => x.text === e.text && x.added === e.added);
+        doc.entries.splice(idx >= 0 ? idx : i, 1);
+      }, 'Notebook: delete note');
+      toast('Note deleted');
+    }catch(err){ showErr(err); }
+  });
+
+  // close modals when tapping the dimmed backdrop
+  $('overlay').addEventListener('click', ev => { if (ev.target === $('overlay')) closeModal(); });
+  $('pickerOverlay').addEventListener('click', ev => { if (ev.target === $('pickerOverlay')) closePicker(); });
+
+  renderFieldSelect();
+  render();
+  if (ghConfigured()) loadAll();
+}
+async function addNote(){
+  if (!ghConfigured()){ openSettings(); return; }
+  const input = $('nbInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  try{
+    await writeNotebook(doc => doc.entries.unshift({ text, added: new Date().toISOString() }),
+      'Notebook: add note');
+    toast('Noted');
+  }catch(e){
+    input.value = text;
+    showErr(e);
+  }
+}
+init();
+</script>
+</body>
+</html>
