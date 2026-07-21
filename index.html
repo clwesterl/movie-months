@@ -392,11 +392,39 @@ async function wdApi(params){
   if (!res.ok) throw { code:'wikidata', status:res.status };
   return res.json();
 }
-async function wdSearch(text){
+// Two searches, merged: a fulltext search restricted to film items (so
+// short titles like "Z" aren't buried under every entity starting with
+// that letter), then the label/alias prefix search (which catches partial
+// typing the fulltext search can't). Film-filtered hits come first.
+const FILM_CLASSES = ['Q11424','Q24862','Q506240','Q202866','Q93204']; // film, short, TV, animated, documentary
+async function wdFilmSearch(text){
+  const filter = ' haswbstatement:' + FILM_CLASSES.map(q => 'P31=' + q).join('|P31=');
+  const j = await wdApi({ action:'query', list:'search', srsearch:text + filter, srlimit:'10' });
+  const ids = ((j.query && j.query.search) || []).map(r => r.title).filter(t => /^Q\d+$/.test(t));
+  if (!ids.length) return [];
+  const ej = await wdApi({ action:'wbgetentities', ids:ids.join('|'), props:'labels|descriptions', languages:'en' });
+  return ids.map(q => {
+    const e = (ej.entities && ej.entities[q]) || {};
+    return {
+      id: q,
+      label: (e.labels && e.labels.en && e.labels.en.value) || q,
+      description: (e.descriptions && e.descriptions.en && e.descriptions.en.value) || ''
+    };
+  });
+}
+async function wdLabelSearch(text){
   const j = await wdApi({ action:'wbsearchentities', search:text, language:'en', uselang:'en', type:'item', limit:'20' });
   const all = (j.search || []).map(r => ({ id:r.id, label:r.label || '', description:r.description || '' }));
   const isFilm = r => /\bfilms?\b|\bmovie\b/i.test(r.description);
   return all.filter(isFilm).concat(all.filter(r => !isFilm(r)));
+}
+async function wdSearch(text){
+  const [film, generic] = await Promise.all([
+    wdFilmSearch(text).catch(() => []),
+    wdLabelSearch(text).catch(() => [])
+  ]);
+  const seen = new Set(film.map(r => r.id));
+  return film.concat(generic.filter(r => !seen.has(r.id)));
 }
 function claimValues(claims, p){
   return (claims[p] || [])
