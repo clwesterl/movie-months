@@ -48,7 +48,12 @@ Two separate concerns, stored separately:
    - `dateWatched` (live entries default to today; **optional** for
      backfilled entries — falls back to sequence order. Editable.)
    - `title`, `year`, `country`, `director`, `genre`
+   - `format` — how it was watched: Streaming / DVD / Theater (dropdown,
+     optional; not sourced from Wikidata, she sets it per film)
    - `imdbId` / IMDb link
+
+   Deleting the **last movie** in a month prompts whether to delete the
+   whole month file too (theme included); declining keeps an empty month.
 
 2. **Notebook** — its own JSON file, persists across all marathons. A simple
    list of short text entries.
@@ -93,7 +98,7 @@ which has excellent poster coverage but reintroduces an API key.
 
 ## Search & filter
 - All movie data is searchable and filterable across every field:
-  title, year, country, director, genre, date watched.
+  title, year, country, director, genre, format, date watched.
 - **Filtering should be extensible** — new fields may be added later, so don't
   hard-code the filter set.
 
@@ -101,6 +106,10 @@ which has excellent poster coverage but reintroduces an API key.
 - A **completed-months dropdown is required** — Nadia will backfill past
   marathons, and will want to browse back through them.
 - Selecting a month loads that marathon for browsing.
+- **Two backfill paths:** bulk import (below) for pasting a whole month's
+  list, and **"＋ Start another month…"** in the dropdown for opening any
+  earlier month and adding movies **one at a time** through the same
+  lookup flow as live entry.
 
 ### Backfill via bulk import
 The past marathons exist as **freeform text** (likely a notes file), so

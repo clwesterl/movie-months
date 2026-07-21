@@ -351,6 +351,14 @@ async function ghPutFile(path, doc, sha, message){
   const j = await res.json();
   return j.content && j.content.sha;
 }
+async function ghDeleteFile(path, sha, message){
+  const res = await fetch(ghUrl(path), {
+    method:'DELETE',
+    headers: Object.assign({'Content-Type':'application/json'}, ghHeaders()),
+    body: JSON.stringify({ message, sha })
+  });
+  if (!res.ok) throw ghError(res);
+}
 // -> [] when the directory doesn't exist yet
 async function ghListDir(path){
   const res = await fetch(ghUrl(path), { headers:ghHeaders(), cache:'no-store' });
@@ -438,6 +446,7 @@ const FIELDS = [
   { key:'country',     label:'Country' },
   { key:'director',    label:'Director' },
   { key:'genre',       label:'Genre' },
+  { key:'format',      label:'Format', options:['Streaming','DVD','Theater'] },
   { key:'dateWatched', label:'Date watched' }
 ];
 function entryMatches(e, q, fieldKey){
@@ -516,6 +525,18 @@ async function writeMonth(key, mutate, message){
   }
   render();
 }
+async function deleteMonth(key, message){
+  const fresh = await ghGetFile(marathonPath(key));
+  if (fresh) await ghDeleteFile(marathonPath(key), fresh.sha, message);
+  delete state.docs[key];
+  state.months = state.months.filter(k => k !== key);
+  if (state.monthKey === key) state.monthKey = currentMonthKey();
+  state.allLoaded = false;
+  if (ghConfigured() && !state.docs[state.monthKey]){
+    try{ await loadMonth(state.monthKey); }catch(e){ /* render shows empty; next action retries */ }
+  }
+  render();
+}
 async function writeNotebook(mutate, message){
   const r = await updateFile(NOTEBOOK_PATH, { entries: [] }, mutate, message);
   state.notebook = r.doc;
@@ -533,7 +554,7 @@ function seqDay(entries, i){
 }
 function entryRowHtml(e, i, key, showMonth){
   const day = seqDay((state.docs[key] ? state.docs[key].doc.entries : []), i);
-  const sub = [e.director, e.country, e.genre].filter(Boolean).join(' · ');
+  const sub = [e.director, e.country, e.genre, e.format].filter(Boolean).join(' · ');
   return '<div class="row" data-key="' + esc(key) + '" data-i="' + i + '">' +
     '<div class="day">' + day + '</div>' +
     '<div class="meat">' +
@@ -550,7 +571,7 @@ function renderMonthSelect(){
   $('monthSelect').innerHTML = keys.map(k =>
     '<option value="' + esc(k) + '"' + (k === state.monthKey ? ' selected' : '') + '>' +
     esc(monthLabel(k)) + (k === currentMonthKey() ? ' · current' : '') + '</option>'
-  ).join('');
+  ).join('') + '<option value="__new">＋ Start another month…</option>';
 }
 function renderFieldSelect(){
   $('fieldSelect').innerHTML =
@@ -698,7 +719,14 @@ function openEntryForm(opts){
     fieldHtml('director','Director') +
     fieldHtml('country','Country') +
     fieldHtml('genre','Genre') +
-    fieldHtml('imdbId','IMDb ID','placeholder="tt0069293"') +
+    '<div class="frow">' +
+      '<div class="field"><label>Format</label><select id="f_format">' +
+        '<option value="">—</option>' +
+        (FIELDS.find(f => f.key === 'format').options || []).map(o =>
+          '<option' + (e.format === o ? ' selected' : '') + '>' + esc(o) + '</option>').join('') +
+      '</select></div>' +
+      fieldHtml('imdbId','IMDb ID','placeholder="tt0069293"') +
+    '</div>' +
     (opts.searchAgain ? '<button class="linky" id="efSearch">↻ Search Wikidata instead</button>' : '') +
     '<div class="mbtns">' +
       (opts.onDelete ? '<button class="btn danger" id="efDelete">Delete</button>' : '') +
@@ -784,12 +812,59 @@ function openEditEntry(key, index){
     },
     onDelete: async () => {
       const title = d.doc.entries[index].title;
+      const lastOne = d.doc.entries.length === 1;
+      if (lastOne && confirm('That was the last movie in ' + monthLabel(key) +
+          '. Delete the whole month too (including its theme)?')){
+        try{
+          await deleteMonth(key, 'Delete ' + key + ' (last movie removed)');
+          toast('Deleted ' + monthLabel(key));
+        }catch(e){ showErr(e); }
+        return;
+      }
       try{
         await writeMonth(key, doc => { doc.entries.splice(index, 1); },
           'Delete “' + title + '” (' + key + ')');
         toast('Deleted ' + title);
       }catch(e){ showErr(e); }
     }
+  });
+}
+
+/* ============================ new month ============================= */
+// Start any month (usually a past one) so movies can be added to it one
+// at a time. The file itself is created on the first save into it.
+function openNewMonth(){
+  if (!ghConfigured()){ openSettings(); return; }
+  const d = new Date();
+  d.setMonth(d.getMonth() - 1);
+  const lastMonth = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  openModal(
+    '<div class="mhead"><h2>Start another month</h2><button class="x" id="nmClose">×</button></div>' +
+    '<div class="frow">' +
+      '<div class="field"><label>Month</label><input id="nmMonth" type="month" value="' + lastMonth + '"></div>' +
+      '<div class="field"><label>Theme (optional)</label><input id="nmTheme" type="text" autocomplete="off"></div>' +
+    '</div>' +
+    '<div class="mbtns"><button class="btn plain" id="nmCancel">Cancel</button>' +
+    '<button class="btn primary" id="nmGo">Open month</button></div>' +
+    '<p class="help">Opens that month so you can add movies to it one at a time — same lookup flow as today’s. For a whole list at once, use Import instead.</p>'
+  );
+  $('nmClose').addEventListener('click', closeModal);
+  $('nmCancel').addEventListener('click', closeModal);
+  $('nmGo').addEventListener('click', async () => {
+    const key = $('nmMonth').value;
+    if (!/^\d{4}-\d{2}$/.test(key)){ toast('Pick a month first', true); return; }
+    const theme = $('nmTheme').value.trim();
+    closeModal();
+    state.monthKey = key;
+    render();
+    try{
+      await loadMonth(key);
+      if (theme && (state.docs[key].doc.theme || '') !== theme){
+        await writeMonth(key, doc => { doc.theme = theme; }, 'Set theme for ' + key);
+      }
+    }catch(e){ showErr(e); }
+    render();
+    toast(monthLabel(key) + ' is open — add movies below');
   });
 }
 
@@ -956,6 +1031,11 @@ function init(){
   $('importBtn').addEventListener('click', openImport);
 
   $('monthSelect').addEventListener('change', async ev => {
+    if (ev.target.value === '__new'){
+      render();          // snap the select back to the real month
+      openNewMonth();
+      return;
+    }
     state.monthKey = ev.target.value;
     render();
     if (ghConfigured()){
