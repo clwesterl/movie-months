@@ -475,6 +475,7 @@ const FIELDS = [
   { key:'director',    label:'Director' },
   { key:'genre',       label:'Genre' },
   { key:'format',      label:'Format', options:['Streaming','DVD','Theater'] },
+  { key:'watchType',   label:'Watch',  options:['New','Rewatch'] },
   { key:'dateWatched', label:'Date watched' }
 ];
 function entryMatches(e, q, fieldKey){
@@ -582,7 +583,9 @@ function seqDay(entries, i){
 }
 function entryRowHtml(e, i, key, showMonth){
   const day = seqDay((state.docs[key] ? state.docs[key].doc.entries : []), i);
-  const sub = [e.director, e.country, e.genre, e.format].filter(Boolean).join(' · ');
+  // 'New' is the common case, so only a rewatch is worth the row space
+  const sub = [e.director, e.country, e.genre, e.format,
+    e.watchType === 'Rewatch' ? 'Rewatch' : ''].filter(Boolean).join(' · ');
   return '<div class="row" data-key="' + esc(key) + '" data-i="' + i + '">' +
     '<div class="day">' + day + '</div>' +
     '<div class="meat">' +
@@ -737,6 +740,15 @@ function openEntryForm(opts){
   const fieldHtml = (key, label, extra) =>
     '<div class="field"><label>' + label + '</label>' +
     '<input id="f_' + key + '" type="text" ' + (extra || '') + ' value="' + esc(e[key] == null ? '' : e[key]) + '" autocomplete="off"></div>';
+  // any FIELDS entry carrying `options` renders as a dropdown
+  const selectHtml = key => {
+    const f = FIELDS.find(x => x.key === key);
+    return '<div class="field"><label>' + esc(f.label) + '</label>' +
+      '<select id="f_' + key + '"><option value="">—</option>' +
+      (f.options || []).map(o =>
+        '<option' + (e[key] === o ? ' selected' : '') + '>' + esc(o) + '</option>').join('') +
+      '</select></div>';
+  };
   openModal(
     '<div class="mhead"><h2>' + esc(opts.title || 'Movie') + '</h2><button class="x" id="efClose">×</button></div>' +
     fieldHtml('title','Title') +
@@ -747,14 +759,8 @@ function openEntryForm(opts){
     fieldHtml('director','Director') +
     fieldHtml('country','Country') +
     fieldHtml('genre','Genre') +
-    '<div class="frow">' +
-      '<div class="field"><label>Format</label><select id="f_format">' +
-        '<option value="">—</option>' +
-        (FIELDS.find(f => f.key === 'format').options || []).map(o =>
-          '<option' + (e.format === o ? ' selected' : '') + '>' + esc(o) + '</option>').join('') +
-      '</select></div>' +
-      fieldHtml('imdbId','IMDb ID','placeholder="tt0069293"') +
-    '</div>' +
+    '<div class="frow">' + selectHtml('format') + selectHtml('watchType') + '</div>' +
+    fieldHtml('imdbId','IMDb ID','placeholder="tt0069293"') +
     (opts.searchAgain ? '<button class="linky" id="efSearch">↻ Search Wikidata instead</button>' : '') +
     '<div class="mbtns">' +
       (opts.onDelete ? '<button class="btn danger" id="efDelete">Delete</button>' : '') +
@@ -797,6 +803,7 @@ function startAddFlow(){
   const isCurrent = key === currentMonthKey();
   openPicker('', picked => {
     if (isCurrent && !picked.dateWatched) picked.dateWatched = todayISO();
+    if (!picked.watchType) picked.watchType = 'New';
     openEntryForm({
       title:'Add to ' + monthLabel(key),
       entry: picked,
@@ -811,7 +818,7 @@ function startAddFlow(){
     closePicker();
     openEntryForm({
       title:'Add to ' + monthLabel(key),
-      entry: isCurrent ? { dateWatched: todayISO() } : {},
+      entry: isCurrent ? { dateWatched: todayISO(), watchType:'New' } : { watchType:'New' },
       searchAgain: true,
       onSave: entry => saveNewEntry(key, entry)
     });

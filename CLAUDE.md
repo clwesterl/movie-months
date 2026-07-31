@@ -50,6 +50,10 @@ Two separate concerns, stored separately:
    - `title`, `year`, `country`, `director`, `genre`
    - `format` — how it was watched: Streaming / DVD / Theater (dropdown,
      optional; not sourced from Wikidata, she sets it per film)
+   - `watchType` — New / Rewatch (dropdown, optional; also not from
+     Wikidata). Single adds default to **New**; bulk-imported entries are
+     left blank. Only *Rewatch* is shown in the list row — "New" is the
+     common case and would just be noise.
    - `imdbId` / IMDb link
 
    Deleting the **last movie** in a month prompts whether to delete the
@@ -98,7 +102,7 @@ which has excellent poster coverage but reintroduces an API key.
 
 ## Search & filter
 - All movie data is searchable and filterable across every field:
-  title, year, country, director, genre, format, date watched.
+  title, year, country, director, genre, format, watch type, date watched.
 - **Filtering should be extensible** — new fields may be added later, so don't
   hard-code the filter set.
 

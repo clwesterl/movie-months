@@ -5,7 +5,7 @@ usually organized around a theme.
 
 - Add today's movie via Wikidata lookup (pick the right match, fields
   autopopulate, everything stays editable) — including how it was watched
-  (streaming / DVD / theater).
+  (streaming / DVD / theater) and whether it's a new watch or a rewatch.
 - Backfill earlier months two ways: paste-and-resolve bulk import, or
   "Start another month" to add films one at a time.
 - Browse completed months from the dropdown; search and filter across
