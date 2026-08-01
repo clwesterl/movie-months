@@ -88,11 +88,14 @@ Since the backfill was a one-time job, it was done by script instead.
       120 auto-matched.**
 - [x] Day numbers → real `dateWatched` values (weekday column confirmed each
       year); Feb's New/Rewatch column → `watchType`.
-- [x] The 4 unmatched films are saved with their spreadsheet title and
-      director, so they show up in-app and can be fixed by hand.
+- [x] The 4 unmatched films were saved with their spreadsheet title and
+      director, and have since been **corrected by hand in-app**.
 - [x] In-app importer removed (recoverable from git history).
-- [ ] **Wishlist tab not imported** — it maps onto the Notebook, but that
-      wasn't part of the request. Still sitting in the spreadsheet.
+- [x] **Wishlist tab deliberately not imported** — decided against; it stays
+      in the spreadsheet.
+- [x] **August 2024** added afterwards by hand, one film at a time through
+      "＋ Start another month…" (29 films) — the intended backfill path,
+      working as designed.
 
 ---
 

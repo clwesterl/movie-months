@@ -132,6 +132,10 @@ every batch under the wrong month (see Gotchas), and with the backfill done
 there's no remaining need for it. Recover it from git history if a second
 bulk import ever comes up.
 
+August 2024 was added later, by hand through the normal add flow, and the
+few films Wikidata couldn't match were corrected in-app. The spreadsheet's
+**wishlist tab is deliberately not imported** — decided, not pending.
+
 Matching notes worth keeping, if a similar import is ever needed: the sheet's
 **director column is the key disambiguator** (title alone is hopeless for
 short or duplicated titles), Wikidata's fuzzy search operator (`term~`)
@@ -177,6 +181,3 @@ is "The South").
 - **Filter extensibility.** A lightweight tag/field system vs. just adding
   columns as needs arise — currently leaning add-as-needed to avoid
   over-engineering.
-- **The wishlist tab** in the source spreadsheet (~20 "been meaning to watch"
-  titles) was **not** imported — it maps naturally onto the Notebook, but
-  that wasn't part of the import request. Still available in the file.
