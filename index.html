@@ -539,6 +539,13 @@ async function loadAll(){
   }
   state.loading = false;
   render();
+  // fill in the rest of the months behind the first paint; the all-time
+  // total and all-months search both need them, and it re-renders when done
+  if (state.connected) ensureAllMonthsLoaded();
+}
+// every entry in every month file, current month included
+function grandTotal(){
+  return Object.keys(state.docs).reduce((sum, k) => sum + state.docs[k].doc.entries.length, 0);
 }
 async function ensureAllMonthsLoaded(){
   if (state.allLoaded || state.loadingAll) return;
@@ -570,7 +577,7 @@ async function deleteMonth(key, message){
   delete state.docs[key];
   state.months = state.months.filter(k => k !== key);
   if (state.monthKey === key) state.monthKey = currentMonthKey();
-  state.allLoaded = false;
+  // what's left in memory is still every remaining month, so allLoaded holds
   if (ghConfigured() && !state.docs[state.monthKey]){
     try{ await loadMonth(state.monthKey); }catch(e){ /* render shows empty; next action retries */ }
   }
@@ -669,6 +676,9 @@ function renderMarathon(){
   const isCurrent = state.monthKey === currentMonthKey();
   let prog = n + (n === 1 ? ' movie' : ' movies') + ' · ' + daysInMonth(state.monthKey) + ' days';
   if (isCurrent) prog += ' · today is day ' + parseInt(todayISO().slice(8,10), 10);
+  // only once every month is in hand, so the running total is never a
+  // half-loaded undercount
+  if (state.allLoaded) prog += ' · ' + grandTotal() + ' all time';
   $('progress').textContent = prog;
   $('addBtn').textContent = isCurrent ? '＋ Add today’s movie' : '＋ Add a movie';
   renderEntryList();
