@@ -76,18 +76,23 @@ _Small and independent; can land any time after Milestone 1._
 - [x] Built **extensibly** — one `FIELDS` config array drives the form, the
       field-scope dropdown, and matching; add a field there and it's wired.
 
-## Milestone 7 — Bulk import (backfill)  ⚠️ parser not final
-Built with the **default** rules; still needs tuning against a sample of the
-real past-months notes before it's trusted.
-- [x] Paste a block of text for a past month (month + optional theme).
-- [ ] Forgiving parser extracts candidate titles — default rules implemented
-      (split on line breaks and commas; strip "Day N:"/numbered/bulleted
-      prefixes and (parenthetical)/[bracketed] notes).
-      **Remaining: tune to the actual sample before finalizing.**
-- [x] Each candidate runs through the Milestone 2 pick-and-autopopulate flow
-      (per-title Find/Redo/Skip in a review list; nothing saves unconfirmed).
-- [x] Save resolved films into that month's marathon file (sequence order;
-      no `dateWatched`).
+## Milestone 7 — Historical backfill  ✅ DONE (differently than specced)
+The in-app paste-and-resolve importer was **built, found broken, and
+removed**. It filed every batch under one wrong month, because Safari has no
+`<input type="month">` and submitted the prefilled default unchanged.
+Since the backfill was a one-time job, it was done by script instead.
+- [x] Source: `movie list history.xlsx` — four month tabs (day, title,
+      director; Feb also New/Rewatch) plus a wishlist tab.
+- [x] Resolved once by script against Wikidata and written to the data repo:
+      **March 2024, June 2025, November 2025, February 2026 — 124 films,
+      120 auto-matched.**
+- [x] Day numbers → real `dateWatched` values (weekday column confirmed each
+      year); Feb's New/Rewatch column → `watchType`.
+- [x] The 4 unmatched films are saved with their spreadsheet title and
+      director, so they show up in-app and can be fixed by hand.
+- [x] In-app importer removed (recoverable from git history).
+- [ ] **Wishlist tab not imported** — it maps onto the Notebook, but that
+      wasn't part of the request. Still sitting in the spreadsheet.
 
 ---
 
