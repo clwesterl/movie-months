@@ -110,21 +110,40 @@ which has excellent poster coverage but reintroduces an API key.
 - A **completed-months dropdown is required** — Nadia will backfill past
   marathons, and will want to browse back through them.
 - Selecting a month loads that marathon for browsing.
-- **Two backfill paths:** bulk import (below) for pasting a whole month's
-  list, and **"＋ Start another month…"** in the dropdown for opening any
-  earlier month and adding movies **one at a time** through the same
+- Backfill happens through **"＋ Start another month…"** in the dropdown:
+  open any earlier month and add movies **one at a time** through the same
   lookup flow as live entry.
 
-### Backfill via bulk import
-The past marathons exist as **freeform text** (likely a notes file), so
-re-typing each film is the wrong path. Provide a **paste-and-resolve import**:
-- She pastes a block of text for a past month.
-- App extracts candidate titles with a **forgiving parser** — default: split
-  on line breaks and commas, strip obvious noise (e.g. "Day 3:" prefixes,
-  parenthetical director notes). Exact rules TBD once a real sample is seen.
-- Each candidate runs through the **same Wikidata pick + autopopulate flow**
-  as live entry, so she confirms matches and fixes any misses.
-- Resolved films are saved into that month's marathon file.
+### Historical backfill — done once, by script (July 2026)
+The past marathons lived in an Excel file (`movie list history.xlsx`, four
+month tabs plus a wishlist). Rather than a paste-and-resolve UI, they were
+resolved **once** by a throwaway script and written straight to the data
+repo: March 2024, June 2025, November 2025, February 2026 — 124 films, 120
+auto-matched against Wikidata. The four unmatched films were saved with
+their spreadsheet title and director so they're visible and fixable in-app.
+
+The in-app bulk importer that previously existed **was removed**: it filed
+every batch under the wrong month (see Gotchas), and with the backfill done
+there's no remaining need for it. Recover it from git history if a second
+bulk import ever comes up.
+
+Matching notes worth keeping, if a similar import is ever needed: the sheet's
+**director column is the key disambiguator** (title alone is hopeless for
+short or duplicated titles), Wikidata's fuzzy search operator (`term~`)
+absorbs spelling slips in the source list, and film titles must be scored
+against **aliases** as well as labels (Wikidata's English label for *El Sur*
+is "The South").
+
+### Gotchas hit in practice (don't re-learn these)
+- **Safari has no `<input type="month">`.** It silently degrades to a text
+  box, so a prefilled default gets submitted as-is — this is what made every
+  bulk import land in one wrong month. Use month + year `<select>`s instead.
+- **Wikidata statement ranks matter.** Deprecated statements (e.g. a
+  cancelled release date) must be filtered out or *Dune: Part Two* resolves
+  to 2023; a `preferred` statement wins when present.
+- **Many person items have no English label**, only a multilingual (`mul`)
+  one — an en-only lookup silently yields a raw Q-id in the Director field.
+  Always request `en|mul` and fall back.
 
 ### Dates for historical entries
 - Past months likely have **no reliable per-day dates** — and for a completed
@@ -150,9 +169,9 @@ re-typing each film is the wrong path. Provide a **paste-and-resolve import**:
   the data source to TMDb and taking on an API key).
 
 ## Open questions
-- **Import parser rules.** A bulk paste-and-resolve path is now specced
-  (see Backfill). The exact extraction rules depend on the real format of the
-  past-months notes — match the parser to a sample before finalizing.
 - **Filter extensibility.** A lightweight tag/field system vs. just adding
   columns as needs arise — currently leaning add-as-needed to avoid
   over-engineering.
+- **The wishlist tab** in the source spreadsheet (~20 "been meaning to watch"
+  titles) was **not** imported — it maps naturally onto the Notebook, but
+  that wasn't part of the import request. Still available in the file.

@@ -226,7 +226,6 @@
   <section id="view-marathon">
     <div class="monthbar">
       <select id="monthSelect"></select>
-      <button id="importBtn" class="ghost">Import…</button>
     </div>
     <input id="themeInput" type="text" placeholder="Theme for this month (optional)" autocomplete="off">
     <div id="progress" class="progress"></div>
@@ -426,16 +425,25 @@ async function wdSearch(text){
   const seen = new Set(film.map(r => r.id));
   return film.concat(generic.filter(r => !seen.has(r.id)));
 }
+// Wikidata ranks statements: deprecated ones are wrong/superseded (e.g. a
+// cancelled release date), and a preferred one wins when present.
 function claimValues(claims, p){
-  return (claims[p] || [])
-    .map(c => c.mainsnak && c.mainsnak.datavalue && c.mainsnak.datavalue.value)
-    .filter(v => v != null);
+  const sts = (claims[p] || []).filter(c => c.rank !== 'deprecated' &&
+    c.mainsnak && c.mainsnak.datavalue && c.mainsnak.datavalue.value != null);
+  const pref = sts.filter(c => c.rank === 'preferred');
+  return (pref.length ? pref : sts).map(c => c.mainsnak.datavalue.value);
+}
+// Many person items now carry their name only as a multilingual ("mul")
+// label with no English one, so en-only lookups fall back to a raw Q-id.
+function pickLabel(ent, fallback){
+  const L = (ent && ent.labels) || {};
+  return (L.en && L.en.value) || (L.mul && L.mul.value) || fallback || '';
 }
 async function wdResolve(id, fallbackLabel){
-  const j = await wdApi({ action:'wbgetentities', ids:id, props:'claims|labels', languages:'en' });
+  const j = await wdApi({ action:'wbgetentities', ids:id, props:'claims|labels', languages:'en|mul' });
   const ent = j.entities && j.entities[id];
   const claims = (ent && ent.claims) || {};
-  const title = (ent && ent.labels && ent.labels.en && ent.labels.en.value) || fallbackLabel || '';
+  const title = pickLabel(ent, fallbackLabel);
   const years = claimValues(claims, 'P577')
     .map(v => v.time && parseInt(String(v.time).slice(1,5), 10))
     .filter(n => n && n > 1800);
@@ -448,11 +456,8 @@ async function wdResolve(id, fallbackLabel){
   const uniq = [...new Set([].concat(qids.director, qids.country, qids.genre))];
   const labels = {};
   if (uniq.length){
-    const lj = await wdApi({ action:'wbgetentities', ids:uniq.join('|'), props:'labels', languages:'en' });
-    for (const q of uniq){
-      const e = lj.entities && lj.entities[q];
-      labels[q] = (e && e.labels && e.labels.en && e.labels.en.value) || q;
-    }
+    const lj = await wdApi({ action:'wbgetentities', ids:uniq.join('|'), props:'labels', languages:'en|mul' });
+    for (const q of uniq) labels[q] = pickLabel(lj.entities && lj.entities[q], q);
   }
   const names = a => a.map(q => labels[q]).join(', ');
   const imdb = claimValues(claims,'P345').find(v => typeof v === 'string') || '';
@@ -872,21 +877,31 @@ function openNewMonth(){
   if (!ghConfigured()){ openSettings(); return; }
   const d = new Date();
   d.setMonth(d.getMonth() - 1);
-  const lastMonth = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  const defYear = d.getFullYear(), defMonth = d.getMonth() + 1;
+  const thisYear = new Date().getFullYear();
+  const years = [];
+  for (let y = thisYear; y >= thisYear - 20; y--) years.push(y);
+  // Two selects, not <input type="month"> — Safari (iPad included) doesn't
+  // support that type and silently degrades it to a text box.
   openModal(
     '<div class="mhead"><h2>Start another month</h2><button class="x" id="nmClose">×</button></div>' +
     '<div class="frow">' +
-      '<div class="field"><label>Month</label><input id="nmMonth" type="month" value="' + lastMonth + '"></div>' +
-      '<div class="field"><label>Theme (optional)</label><input id="nmTheme" type="text" autocomplete="off"></div>' +
+      '<div class="field"><label>Month</label><select id="nmMonth">' +
+        MONTHS.map((m, i) => '<option value="' + (i+1) + '"' + (i+1 === defMonth ? ' selected' : '') +
+          '>' + m + '</option>').join('') + '</select></div>' +
+      '<div class="field"><label>Year</label><select id="nmYear">' +
+        years.map(y => '<option' + (y === defYear ? ' selected' : '') + '>' + y + '</option>').join('') +
+      '</select></div>' +
     '</div>' +
+    '<div class="field"><label>Theme (optional)</label><input id="nmTheme" type="text" autocomplete="off"></div>' +
     '<div class="mbtns"><button class="btn plain" id="nmCancel">Cancel</button>' +
     '<button class="btn primary" id="nmGo">Open month</button></div>' +
-    '<p class="help">Opens that month so you can add movies to it one at a time — same lookup flow as today’s. For a whole list at once, use Import instead.</p>'
+    '<p class="help">Opens that month so you can add movies to it one at a time — same lookup flow as today’s.</p>'
   );
   $('nmClose').addEventListener('click', closeModal);
   $('nmCancel').addEventListener('click', closeModal);
   $('nmGo').addEventListener('click', async () => {
-    const key = $('nmMonth').value;
+    const key = $('nmYear').value + '-' + String(+$('nmMonth').value).padStart(2,'0');
     if (!/^\d{4}-\d{2}$/.test(key)){ toast('Pick a month first', true); return; }
     const theme = $('nmTheme').value.trim();
     closeModal();
@@ -900,110 +915,6 @@ function openNewMonth(){
     }catch(e){ showErr(e); }
     render();
     toast(monthLabel(key) + ' is open — add movies below');
-  });
-}
-
-/* ============================== import ============================== */
-// Default parser rules — split on line breaks and commas, strip "Day N:"
-// prefixes and (parenthetical notes). Tune against the real notes sample
-// before trusting it too much; every miss is fixable in the review list.
-function parseImportText(text){
-  const items = [];
-  for (let line of String(text).split(/\r?\n/)){
-    line = line.trim();
-    if (!line) continue;
-    line = line.replace(/^day\s*\d+\s*[:.\-–—)]?\s*/i, '');
-    line = line.replace(/^\d{1,2}\s*[:.)\-–—]\s*/, '');
-    line = line.replace(/\([^)]*\)/g, ' ').replace(/\[[^\]]*\]/g, ' ');
-    for (let part of line.split(',')){
-      part = part.replace(/^[-–—•*·]+\s*/, '').replace(/\s+/g, ' ').trim();
-      if (!part) continue;
-      if (/^\d{1,4}$/.test(part)) continue;
-      items.push({ raw: part, title: part, status:'pending', entry: null });
-    }
-  }
-  return items;
-}
-let imp = null; // { monthKey, theme, items }
-function openImport(){
-  if (!ghConfigured()){ openSettings(); return; }
-  imp = null;
-  const d = new Date();
-  d.setMonth(d.getMonth() - 1);
-  const lastMonth = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
-  openModal(
-    '<div class="mhead"><h2>Import a past month</h2><button class="x" id="imClose">×</button></div>' +
-    '<div class="frow">' +
-      '<div class="field"><label>Month</label><input id="imMonth" type="month" value="' + lastMonth + '"></div>' +
-      '<div class="field"><label>Theme (optional)</label><input id="imTheme" type="text" autocomplete="off"></div>' +
-    '</div>' +
-    '<div class="field"><label>Paste the month’s list</label>' +
-      '<textarea id="imText" rows="7" placeholder="Day 1: Solaris (Tarkovsky)&#10;Day 2: Stalker&#10;…"></textarea></div>' +
-    '<div class="mbtns"><button class="btn primary" id="imParse">Find the films</button></div>' +
-    '<p class="help">Each line (or comma-separated title) becomes a candidate. You’ll confirm every match against Wikidata before anything is saved — order is kept, no dates needed.</p>'
-  );
-  $('imClose').addEventListener('click', closeModal);
-  $('imParse').addEventListener('click', () => {
-    const monthKey = $('imMonth').value;
-    if (!/^\d{4}-\d{2}$/.test(monthKey)){ toast('Pick a month first', true); return; }
-    const items = parseImportText($('imText').value);
-    if (!items.length){ toast('Nothing to import — paste the list first', true); return; }
-    imp = { monthKey, theme: $('imTheme').value.trim(), items };
-    renderImportReview();
-  });
-}
-function renderImportReview(){
-  const done = imp.items.filter(i => i.status === 'done').length;
-  const skipped = imp.items.filter(i => i.status === 'skipped').length;
-  openModal(
-    '<div class="mhead"><h2>' + esc(monthLabel(imp.monthKey)) + ' · ' + done + '/' +
-      (imp.items.length - skipped) + ' matched</h2><button class="x" id="irClose">×</button></div>' +
-    '<div id="irList">' +
-    imp.items.map((it, i) => {
-      const st = it.status === 'done' ?
-          '<div class="st ok">✓ ' + esc(it.entry.title) + (it.entry.year ? ' (' + esc(it.entry.year) + ')' : '') +
-          (it.entry.director ? ' — ' + esc(it.entry.director) : '') + '</div>' :
-        it.status === 'skipped' ? '<div class="st">skipped</div>' :
-          '<div class="st">not matched yet</div>';
-      return '<div class="impItem ' + it.status + '">' +
-        '<div class="top"><div class="name">' + esc(it.title) + '</div>' +
-          (it.status === 'skipped' ?
-            '<button class="mini" data-act="unskip" data-i="' + i + '">Undo</button>' :
-            '<button class="mini" data-act="find" data-i="' + i + '">' + (it.status === 'done' ? 'Redo' : 'Find') + '</button>' +
-            '<button class="mini" data-act="skip" data-i="' + i + '">Skip</button>') +
-        '</div>' + st + '</div>';
-    }).join('') +
-    '</div>' +
-    '<div class="mbtns">' +
-      '<button class="btn plain" id="irBack">Back</button>' +
-      '<button class="btn primary" id="irSave"' + (done ? '' : ' disabled') + '>Save ' + done + ' film' + (done === 1 ? '' : 's') + '</button>' +
-    '</div>' +
-    '<p class="help">“Find” opens the Wikidata match list for that title. Unmatched or skipped lines simply aren’t saved.</p>'
-  );
-  $('irClose').addEventListener('click', () => { if (confirm('Abandon this import?')) closeModal(); });
-  $('irBack').addEventListener('click', openImport);
-  document.querySelectorAll('#irList .mini').forEach(btn => btn.addEventListener('click', () => {
-    const i = +btn.dataset.i, act = btn.dataset.act, it = imp.items[i];
-    if (act === 'skip'){ it.status = 'skipped'; renderImportReview(); }
-    else if (act === 'unskip'){ it.status = it.entry ? 'done' : 'pending'; renderImportReview(); }
-    else openPicker(it.title, entry => { it.entry = entry; it.status = 'done'; renderImportReview(); });
-  }));
-  $('irSave').addEventListener('click', async () => {
-    const films = imp.items.filter(i => i.status === 'done').map(i => i.entry);
-    const pending = imp.items.filter(i => i.status === 'pending').length;
-    if (pending && !confirm(pending + ' title' + (pending === 1 ? '' : 's') + ' still unmatched — save without them?')) return;
-    const { monthKey, theme } = imp;
-    try{
-      await writeMonth(monthKey, doc => {
-        if (theme) doc.theme = theme;
-        doc.entries = doc.entries.concat(films);
-      }, 'Import ' + films.length + ' films into ' + monthKey);
-      closeModal();
-      state.monthKey = monthKey;
-      state.allLoaded = false;
-      render();
-      toast('Imported ' + films.length + ' films into ' + monthLabel(monthKey));
-    }catch(e){ showErr(e); }
   });
 }
 
@@ -1063,7 +974,6 @@ function init(){
   $('settingsBtn').addEventListener('click', openSettings);
   $('setupBtn').addEventListener('click', openSettings);
   $('addBtn').addEventListener('click', startAddFlow);
-  $('importBtn').addEventListener('click', openImport);
 
   $('monthSelect').addEventListener('change', async ev => {
     if (ev.target.value === '__new'){

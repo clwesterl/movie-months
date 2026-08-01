@@ -6,8 +6,9 @@ usually organized around a theme.
 - Add today's movie via Wikidata lookup (pick the right match, fields
   autopopulate, everything stays editable) — including how it was watched
   (streaming / DVD / theater) and whether it's a new watch or a rewatch.
-- Backfill earlier months two ways: paste-and-resolve bulk import, or
-  "Start another month" to add films one at a time.
+- Backfill earlier months with "Start another month", adding films one at
+  a time. (The historical marathons were loaded once by script — see
+  `CLAUDE.md`.)
 - Browse completed months from the dropdown; search and filter across
   every field, in one month or all of them.
 - Freeform notebook for ideas, not tied to any month.
