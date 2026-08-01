@@ -103,6 +103,11 @@ which has excellent poster coverage but reintroduces an API key.
 ## Search & filter
 - All movie data is searchable and filterable across every field:
   title, year, country, director, genre, format, watch type, date watched.
+- **Type-ahead (prefix) matching, not substring:** each typed term must start
+  a *word* somewhere in the searched fields, so "r" → Rashomon / The Red
+  Shoes / Mamma Roma, and "ra" narrows it. Word-start rather than
+  field-start, so a leading "The" doesn't hide a title. Multiple terms all
+  have to match and may land in different fields ("kur ik" → Ikiru).
 - **Filtering should be extensible** — new fields may be added later, so don't
   hard-code the filter set.
 

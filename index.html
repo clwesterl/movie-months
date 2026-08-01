@@ -483,11 +483,16 @@ const FIELDS = [
   { key:'watchType',   label:'Watch',  options:['New','Rewatch'] },
   { key:'dateWatched', label:'Date watched' }
 ];
+const tokens = s => String(s == null ? '' : s).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+// Type-ahead matching: each term must start a word somewhere in the searched
+// fields. "r" catches Rashomon and The Red Shoes (leading "The" doesn't hide
+// it), "ra" narrows to Rashomon, and "rear win" finds Rear Window.
 function entryMatches(e, q, fieldKey){
-  if (!q) return true;
-  const ql = q.toLowerCase();
+  const terms = tokens(q);
+  if (!terms.length) return true;
   const keys = fieldKey === 'all' ? FIELDS.map(f => f.key) : [fieldKey];
-  return keys.some(k => String(e[k] == null ? '' : e[k]).toLowerCase().includes(ql));
+  const words = keys.reduce((acc, k) => acc.concat(tokens(e[k])), []);
+  return terms.every(t => words.some(w => w.startsWith(t)));
 }
 
 /* ============================== state =============================== */
