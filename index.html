@@ -615,7 +615,15 @@ function entryRowHtml(e, i, key, showMonth){
   '</div>';
 }
 function renderMonthSelect(){
-  const keys = [...new Set([currentMonthKey(), state.monthKey, ...state.months])].sort().reverse();
+  const cur = currentMonthKey();
+  // A past month that never got a film is clutter — a marathon that didn't
+  // happen. Hide it, but never hide the current month or the one open right
+  // now (it may have just been started for backfill), and don't hide a month
+  // whose file hasn't loaded yet, since its count isn't known.
+  const listed = state.months.filter(k =>
+    k === cur || k === state.monthKey || k >= cur ||
+    !state.docs[k] || state.docs[k].doc.entries.length > 0);
+  const keys = [...new Set([cur, state.monthKey, ...listed])].sort().reverse();
   $('monthSelect').innerHTML = keys.map(k =>
     '<option value="' + esc(k) + '"' + (k === state.monthKey ? ' selected' : '') + '>' +
     esc(monthLabel(k)) + (k === currentMonthKey() ? ' · current' : '') + '</option>'

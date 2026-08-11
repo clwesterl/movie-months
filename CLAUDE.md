@@ -115,6 +115,10 @@ which has excellent poster coverage but reintroduces an API key.
 - A **completed-months dropdown is required** — Nadia will backfill past
   marathons, and will want to browse back through them.
 - Selecting a month loads that marathon for browsing.
+- **Past months with no films are hidden from the dropdown** — a marathon
+  that never happened is clutter. The current month always shows (it's where
+  today's film goes), as does the month currently open, and a month whose
+  file hasn't loaded yet is never hidden on a guess.
 - Backfill happens through **"＋ Start another month…"** in the dropdown:
   open any earlier month and add movies **one at a time** through the same
   lookup flow as live entry.
