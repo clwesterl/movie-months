@@ -71,6 +71,17 @@
   .searchbar input{flex:2 1 160px}
   .searchbar select{flex:1 1 100px; width:auto}
 
+  .listbar{display:flex; gap:8px; margin:-4px 0 12px; flex-wrap:wrap}
+  .lchk{
+    display:flex; align-items:center; gap:6px; cursor:pointer;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:9px 12px; font-size:14.5px; color:var(--muted); min-height:44px;
+    user-select:none; -webkit-user-select:none;
+  }
+  .lchk input{width:17px; height:17px; margin:0; accent-color:var(--red); flex:none}
+  .lchk:has(input:checked){border-color:var(--green-dim); color:var(--text); background:var(--panel2)}
+  .lchk .mk{margin:0}
+
   .row{
     display:flex; align-items:center; gap:12px;
     background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
@@ -242,6 +253,14 @@
         <option value="month">This month</option>
         <option value="all">All months</option>
       </select>
+    </div>
+    <div class="listbar">
+      <label class="lchk"><input type="checkbox" id="lf1001" data-lf="1001">
+        <span class="mk mk1001">✓</span> 1001 Movies</label>
+      <label class="lchk"><input type="checkbox" id="lfss" data-lf="ss">
+        <span class="mk mkss">✓</span> Sight &amp; Sound</label>
+      <label class="lchk"><input type="checkbox" id="lfboth" data-lf="both">
+        <span class="mk mk1001">✓</span><span class="mk mkss">✓</span> Both</label>
     </div>
     <div id="entryList"></div>
   </section>
@@ -524,7 +543,17 @@ const tokens = s => String(s == null ? '' : s).toLowerCase().split(/[^a-z0-9]+/)
 // Type-ahead matching: each term must start a word somewhere in the searched
 // fields. "r" catches Rashomon and The Red Shoes (leading "The" doesn't hide
 // it), "ra" narrows to Rashomon, and "rear win" finds Rear Window.
-function entryMatches(e, q, fieldKey){
+// Canon-list checkboxes. Not fields to search inside — they narrow *which
+// films* qualify, and any typed text still searches fields as normal. They
+// stack with the month/all-months scope, so either can be browsed.
+const LIST_FILTERS = {
+  '1001': e => on1001(e),
+  'ss':   e => !!ssRank(e),
+  'both': e => on1001(e) && !!ssRank(e)
+};
+function entryMatches(e, q, fieldKey, listFilter){
+  const lf = LIST_FILTERS[listFilter];
+  if (lf && !lf(e)) return false;
   const terms = tokens(q);
   if (!terms.length) return true;
   const keys = fieldKey === 'all' ? FIELDS.map(f => f.key) : [fieldKey];
@@ -541,7 +570,7 @@ const state = {
   notebook: { entries: [] },
   connected: false,
   loading: false,
-  query:'', field:'all', scope:'month',
+  query:'', field:'all', scope:'month', listFilter:'',
   loadingAll:false, allLoaded:false
 };
 const emptyMonthDoc = key => ({ month:key, theme:'', entries:[] });
@@ -684,10 +713,18 @@ function renderFieldSelect(){
     FIELDS.map(f => '<option value="' + f.key + '"' + (state.field === f.key ? ' selected' : '') + '>' +
       esc(f.label) + '</option>').join('');
 }
+// says which of the two things came up empty — the search or the list filter
+function emptyMsg(where){
+  const names = {'1001':'the 1001 Movies list', 'ss':'the Sight & Sound 250', 'both':'both lists'};
+  if (state.listFilter && !state.query) return 'Nothing from ' + names[state.listFilter] + ' ' + where + '.';
+  if (state.listFilter) return 'Nothing ' + where + ' matches that search, on ' + names[state.listFilter] + '.';
+  return 'Nothing matches that search' + (where === 'in any month' ? ' in any month' : '') + '.';
+}
 function renderEntryList(){
   const box = $('entryList');
   if (state.loading){ box.innerHTML = '<div class="empty"><span class="spin"></span>Loading…</div>'; return; }
-  if (state.scope === 'all' && state.query){
+  // a list filter is reason enough to span every month, even with no text typed
+  if (state.scope === 'all' && (state.query || state.listFilter)){
     if (!state.allLoaded){
       ensureAllMonthsLoaded();
       box.innerHTML = '<div class="empty"><span class="spin"></span>Loading every month…</div>';
@@ -700,26 +737,26 @@ function renderEntryList(){
       if (!d) continue;
       const rows = d.doc.entries
         .map((e, i) => ({ e, i }))
-        .filter(x => entryMatches(x.e, state.query, state.field));
+        .filter(x => entryMatches(x.e, state.query, state.field, state.listFilter));
       if (!rows.length) continue;
       hits += rows.length;
       html += '<div class="grouphead">' + esc(monthLabel(k)) + '</div>' +
               rows.map(x => entryRowHtml(x.e, x.i, k, false)).join('');
     }
-    box.innerHTML = html || '<div class="empty">No matches in any month.</div>';
+    box.innerHTML = html || '<div class="empty">' + emptyMsg('in any month') + '</div>';
     return;
   }
   const cur = state.docs[state.monthKey];
   const entries = cur ? cur.doc.entries : [];
   const rows = entries
     .map((e, i) => ({ e, i }))
-    .filter(x => entryMatches(x.e, state.query, state.field));
+    .filter(x => entryMatches(x.e, state.query, state.field, state.listFilter));
   if (!entries.length){
     box.innerHTML = '<div class="empty">' + (state.connected ?
       'No movies yet this month.<br>Tap below to add today’s.' :
       'Connect GitHub (⚙) to load your marathons.') + '</div>';
   }else if (!rows.length){
-    box.innerHTML = '<div class="empty">Nothing matches that search.</div>';
+    box.innerHTML = '<div class="empty">' + emptyMsg('this month') + '</div>';
   }else{
     box.innerHTML = rows.map(x => entryRowHtml(x.e, x.i, state.monthKey, false)).join('');
   }
@@ -1078,6 +1115,14 @@ function init(){
   });
   $('fieldSelect').addEventListener('change', ev => { state.field = ev.target.value; renderEntryList(); });
   $('scopeSelect').addEventListener('change', ev => { state.scope = ev.target.value; renderEntryList(); });
+  // three boxes, one filter: ticking one clears the others, and ticking the
+  // active one clears the filter entirely
+  document.querySelectorAll('.lchk input').forEach(box => box.addEventListener('change', () => {
+    const want = box.dataset.lf;
+    state.listFilter = (box.checked && state.listFilter !== want) ? want : '';
+    document.querySelectorAll('.lchk input').forEach(b => { b.checked = (b.dataset.lf === state.listFilter); });
+    renderEntryList();
+  }));
 
   $('entryList').addEventListener('click', ev => {
     if (ev.target.closest('a')) return;

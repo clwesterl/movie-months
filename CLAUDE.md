@@ -114,6 +114,14 @@ indexes (~46KB) and matched **at render time**, deliberately *not* stored as
 flags on each entry. That means every existing film is covered with no data
 migration, and anything added later ticks itself with no extra step.
 
+**Filtering by list:** three checkboxes under the search bar — *1001 Movies*,
+*Sight & Sound*, *Both*. They behave as one filter, not three independent
+ones: ticking one clears the others, and ticking the active one clears the
+filter. (Two independent boxes could express the same three states, but a
+box literally labelled "Both" alongside them would be ambiguous.) The filter
+stacks with everything else — the month/all-months scope and any typed
+search both still apply.
+
 Matching notes:
 - Key on normalised title (diacritics, punctuation, articles and part
   numbers folded) **plus year within ±1** — sources disagree on release years
