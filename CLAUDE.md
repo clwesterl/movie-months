@@ -100,6 +100,33 @@ Wikidata is a poor poster source (inconsistent, and real posters are usually
 copyright-blocked on Commons); the moment to revisit is a switch to **TMDb**,
 which has excellent poster coverage but reintroduces an API key.
 
+## Canon lists — 1001 Movies & Sight & Sound 250
+Films carry two tick marks next to the title when they appear on a canon list:
+- **Green ✓** — on the *1001 Movies You Must See Before You Die* list (the
+  fandom wiki's full cross-edition list, 1245 entries).
+- **Red ✓** — in the *Sight & Sound* 2022 critics' poll (264 films; ties
+  share a rank). Its **rank** is a hover tooltip on desktop, and tapping the
+  red tick toasts it — the iPad has no hover, so a tooltip alone would be
+  invisible to the primary user.
+
+Both lists are **embedded in `index.html`** as normalised title → year
+indexes (~46KB) and matched **at render time**, deliberately *not* stored as
+flags on each entry. That means every existing film is covered with no data
+migration, and anything added later ticks itself with no extra step.
+
+Matching notes:
+- Key on normalised title (diacritics, punctuation, articles and part
+  numbers folded) **plus year within ±1** — sources disagree on release years
+  (*Black Narcissus* 1946 vs 1947, *Beau Travail* 1998 vs 1999).
+- A year is **required** to match, so a film with a blank year never ticks —
+  better than guessing on title alone, where *The Magnificent Seven* and
+  *The Magnificent Ambersons* are one fuzzy step apart.
+- The 1001 list's own **alternate titles are indexed** (331 of them), which
+  is what catches *Yi Yi* → "A One and a Two", *Ikiru* → "To Live".
+- `EXTRA` in the build script holds hand-added aliases for the rest; so far
+  only *Ugetsu* → "Tales of Ugetsu". Add to it if a film that should tick
+  doesn't.
+
 ## Search & filter
 - All movie data is searchable and filterable across every field:
   title, year, country, director, genre, format, watch type, date watched.
