@@ -123,9 +123,11 @@ Matching notes:
   *The Magnificent Ambersons* are one fuzzy step apart.
 - The 1001 list's own **alternate titles are indexed** (331 of them), which
   is what catches *Yi Yi* → "A One and a Two", *Ikiru* → "To Live".
-- `EXTRA` in the build script holds hand-added aliases for the rest; so far
-  only *Ugetsu* → "Tales of Ugetsu". Add to it if a film that should tick
-  doesn't.
+- `EXTRA` in `tools/build-canon-lists.py` holds hand-added aliases for the
+  rest; so far only *Ugetsu* → "Tales of Ugetsu". Add to it if a film that
+  should tick doesn't, then re-run the script — it rewrites the two index
+  lines in `index.html` in place. The source lists live in `tools/` beside
+  it, so the embedded blob is always reproducible.
 
 ## Search & filter
 - All movie data is searchable and filterable across every field:
