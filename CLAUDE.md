@@ -6,6 +6,11 @@ for a full month (28–31 days), usually organized around a theme. She adds
 movies **as she goes** — this is not a pre-planned lineup — and the month's
 list fills in behind her, day by day.
 
+Not every month is a marathon. Films watched in ordinary months are logged
+too, but kept separate: each month carries a **marathon toggle** (see Data
+model), and marathons are grouped apart from ordinary months and counted
+separately.
+
 ## Users & devices
 - **Nadia — primary user.** Almost always **iPad + Safari**. Design targets
   her: touch-first, portrait-friendly, app-like (works well as an
@@ -43,8 +48,15 @@ can't serve a private repo on the free plan):
 Two separate concerns, stored separately:
 
 1. **Marathons** — one JSON file per month (so past months are browsable).
-   Each marathon holds an optional theme, its month/start date, and a list
-   of day entries. Each day entry is a movie she added that day:
+   Each marathon holds an optional theme, its month/start date, a
+   `marathon` flag, and a list of day entries.
+
+   `marathon` is **true unless explicitly false**, so month files written
+   before the toggle existed (and any month not yet loaded) read as
+   marathons — no migration was needed. New months default to marathon;
+   untick *Marathon month* to make one an ordinary viewing log. An ordinary
+   month drops the "N days / today is day X" framing, which only means
+   something when the goal is a film a day. Each day entry is a movie she added that day:
    - `dateWatched` (live entries default to today; **optional** for
      backfilled entries — falls back to sequence order. Editable.)
    - `title`, `year`, `country`, `director`, `genre`
@@ -152,6 +164,11 @@ Matching notes:
 - A **completed-months dropdown is required** — Nadia will backfill past
   marathons, and will want to browse back through them.
 - Selecting a month loads that marathon for browsing.
+- **Marathons and ordinary months are grouped separately** in the dropdown
+  (`Marathons` / `Other months`), and the summary line counts them apart —
+  "3 movies · 184 in marathons · 187 all time". Both the grouping and the
+  split total only appear once a mix actually exists, so nothing changes
+  until the first ordinary month is created.
 - **Past months with no films are hidden from the dropdown** — a marathon
   that never happened is clutter. The current month always shows (it's where
   today's film goes), as does the month currently open, and a month whose

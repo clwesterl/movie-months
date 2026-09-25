@@ -245,6 +245,9 @@
       <select id="monthSelect"></select>
     </div>
     <input id="themeInput" type="text" placeholder="Theme for this month (optional)" autocomplete="off">
+    <div class="listbar">
+      <label class="lchk"><input type="checkbox" id="marathonChk"> Marathon month</label>
+    </div>
     <div id="progress" class="progress"></div>
     <div class="searchbar">
       <input id="searchInput" type="search" placeholder="Search movies…" autocomplete="off">
@@ -573,7 +576,13 @@ const state = {
   query:'', field:'all', scope:'month', listFilter:'',
   loadingAll:false, allLoaded:false
 };
-const emptyMonthDoc = key => ({ month:key, theme:'', entries:[] });
+const emptyMonthDoc = key => ({ month:key, theme:'', marathon:true, entries:[] });
+// A month is a marathon unless explicitly turned off, so month files written
+// before the toggle existed (and any not yet loaded) read as marathons.
+function isMarathon(key){
+  const d = state.docs[key];
+  return d ? d.doc.marathon !== false : true;
+}
 
 async function loadMonths(){
   const items = await ghListDir('marathons');
@@ -612,6 +621,11 @@ async function loadAll(){
 // every entry in every month file, current month included
 function grandTotal(){
   return Object.keys(state.docs).reduce((sum, k) => sum + state.docs[k].doc.entries.length, 0);
+}
+// marathon films only — ordinary months are logged but kept out of this
+function marathonTotal(){
+  return Object.keys(state.docs).reduce((sum, k) =>
+    sum + (isMarathon(k) ? state.docs[k].doc.entries.length : 0), 0);
 }
 async function ensureAllMonthsLoaded(){
   if (state.allLoaded || state.loadingAll) return;
@@ -702,10 +716,15 @@ function renderMonthSelect(){
     k === cur || k === state.monthKey || k >= cur ||
     !state.docs[k] || state.docs[k].doc.entries.length > 0);
   const keys = [...new Set([cur, state.monthKey, ...listed])].sort().reverse();
-  $('monthSelect').innerHTML = keys.map(k =>
-    '<option value="' + esc(k) + '"' + (k === state.monthKey ? ' selected' : '') + '>' +
-    esc(monthLabel(k)) + (k === currentMonthKey() ? ' · current' : '') + '</option>'
-  ).join('') + '<option value="__new">＋ Start another month…</option>';
+  const opt = k => '<option value="' + esc(k) + '"' + (k === state.monthKey ? ' selected' : '') + '>' +
+    esc(monthLabel(k)) + (k === cur ? ' · current' : '') + '</option>';
+  const mar = keys.filter(isMarathon), oth = keys.filter(k => !isMarathon(k));
+  // only split into groups once there's actually a mix to separate
+  const body = (mar.length && oth.length)
+    ? '<optgroup label="Marathons">' + mar.map(opt).join('') + '</optgroup>' +
+      '<optgroup label="Other months">' + oth.map(opt).join('') + '</optgroup>'
+    : keys.map(opt).join('');
+  $('monthSelect').innerHTML = body + '<option value="__new">＋ Start another month…</option>';
 }
 function renderFieldSelect(){
   $('fieldSelect').innerHTML =
@@ -768,11 +787,23 @@ function renderMarathon(){
   if (document.activeElement !== themeEl) themeEl.value = cur ? (cur.doc.theme || '') : '';
   const n = cur ? cur.doc.entries.length : 0;
   const isCurrent = state.monthKey === currentMonthKey();
-  let prog = n + (n === 1 ? ' movie' : ' movies') + ' · ' + daysInMonth(state.monthKey) + ' days';
-  if (isCurrent) prog += ' · today is day ' + parseInt(todayISO().slice(8,10), 10);
+  const marathon = isMarathon(state.monthKey);
+  $('marathonChk').checked = marathon;
+  let prog = n + (n === 1 ? ' movie' : ' movies');
+  // the day framing is a marathon idea (one film a day) — meaningless on a
+  // month that's just a viewing log
+  if (marathon){
+    prog += ' · ' + daysInMonth(state.monthKey) + ' days';
+    if (isCurrent) prog += ' · today is day ' + parseInt(todayISO().slice(8,10), 10);
+  }
   // only once every month is in hand, so the running total is never a
   // half-loaded undercount
-  if (state.allLoaded) prog += ' · ' + grandTotal() + ' all time';
+  if (state.allLoaded){
+    const mt = marathonTotal(), gt = grandTotal();
+    // no point splitting the total until an ordinary month actually exists
+    prog += mt === gt ? ' · ' + gt + ' all time'
+                      : ' · ' + mt + ' in marathons · ' + gt + ' all time';
+  }
   $('progress').textContent = prog;
   $('addBtn').textContent = isCurrent ? '＋ Add today’s movie' : '＋ Add a movie';
   renderEntryList();
@@ -1106,6 +1137,18 @@ function init(){
       await writeMonth(state.monthKey, doc => { doc.theme = v; }, 'Set theme for ' + state.monthKey);
       toast('Theme saved');
     }catch(e){ showErr(e); }
+  });
+  $('marathonChk').addEventListener('change', async ev => {
+    if (!ghConfigured()){ ev.target.checked = !ev.target.checked; openSettings(); return; }
+    const on = ev.target.checked, key = state.monthKey;
+    try{
+      await writeMonth(key, doc => { doc.marathon = on; },
+        (on ? 'Mark ' : 'Unmark ') + key + ' as a marathon month');
+      toast(monthLabel(key) + (on ? ' is a marathon month' : ' is an ordinary month'));
+    }catch(e){
+      ev.target.checked = !on;          // put the box back if the write failed
+      showErr(e);
+    }
   });
 
   let deb = null;
