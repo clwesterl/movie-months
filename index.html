@@ -540,6 +540,9 @@ const FIELDS = [
   { key:'genre',       label:'Genre' },
   { key:'format',      label:'Format', options:['Streaming','DVD','Theater'] },
   { key:'watchType',   label:'Watch',  options:['New','Rewatch'] },
+  // A festival is a tag on the film, set by hand — nothing is synced from the
+  // Loft scheduling app. Add another festival here and it wires itself up.
+  { key:'fest',        label:'Festival', options:['Loft Film Fest'] },
   { key:'dateWatched', label:'Date watched' }
 ];
 const tokens = s => String(s == null ? '' : s).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
@@ -693,7 +696,7 @@ function entryRowHtml(e, i, key, showMonth){
   const day = seqDay((state.docs[key] ? state.docs[key].doc.entries : []), i);
   // 'New' is the common case, so only a rewatch is worth the row space
   const sub = [e.director, e.country, e.genre, e.format,
-    e.watchType === 'Rewatch' ? 'Rewatch' : ''].filter(Boolean).join(' · ');
+    e.watchType === 'Rewatch' ? 'Rewatch' : '', e.fest].filter(Boolean).join(' · ');
   return '<div class="row" data-key="' + esc(key) + '" data-i="' + i + '">' +
     '<div class="day">' + day + '</div>' +
     '<div class="meat">' +
@@ -905,7 +908,8 @@ function openEntryForm(opts){
     fieldHtml('country','Country') +
     fieldHtml('genre','Genre') +
     '<div class="frow">' + selectHtml('format') + selectHtml('watchType') + '</div>' +
-    fieldHtml('imdbId','IMDb ID','placeholder="tt0069293"') +
+    '<div class="frow">' + selectHtml('fest') +
+      fieldHtml('imdbId','IMDb ID','placeholder="tt0069293"') + '</div>' +
     (opts.searchAgain ? '<button class="linky" id="efSearch">↻ Search Wikidata instead</button>' : '') +
     '<div class="mbtns">' +
       (opts.onDelete ? '<button class="btn danger" id="efDelete">Delete</button>' : '') +

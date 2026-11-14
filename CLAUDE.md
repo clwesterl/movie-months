@@ -66,6 +66,12 @@ Two separate concerns, stored separately:
      Wikidata). Single adds default to **New**; bulk-imported entries are
      left blank. Only *Rewatch* is shown in the list row — "New" is the
      common case and would just be noise.
+   - `fest` — festival tag, currently just *Loft Film Fest* (dropdown,
+     optional, blank by default). Set **by hand**: there is a separate app
+     for scheduling the Loft fest, but nothing is synced or auto-added
+     between them — this is only an indicator here. Shows in the list row
+     and is searchable ("loft" finds them). Another festival is one more
+     entry in that field's `options`.
    - `imdbId` / IMDb link
 
    Deleting the **last movie** in a month prompts whether to delete the
@@ -151,7 +157,8 @@ Matching notes:
 
 ## Search & filter
 - All movie data is searchable and filterable across every field:
-  title, year, country, director, genre, format, watch type, date watched.
+  title, year, country, director, genre, format, watch type, festival,
+  date watched.
 - **Type-ahead (prefix) matching, not substring:** each typed term must start
   a *word* somewhere in the searched fields, so "r" → Rashomon / The Red
   Shoes / Mamma Roma, and "ra" narrows it. Word-start rather than
