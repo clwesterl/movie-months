@@ -15,6 +15,9 @@
     --text:#1b2a20; --muted:#5e6a61; --faint:#98a29a;
     --red:#ce1126; --red-dim:#a30d1e; --green:#0a7d3f; --green-dim:#0a5c30;
     --danger:#ce1126;
+    /* sampled from the Loft Film Fest poster artwork — its dominant purple,
+       and dark enough to stay legible as title text on white (5.6:1) */
+    --fest:#775c91;
     --radius:14px; --shadow:0 14px 30px -20px rgba(20,45,28,.4);
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
@@ -95,6 +98,7 @@
   }
   .meat{flex:1; min-width:0}
   .t{font-size:16.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis}
+  .t.fest{color:var(--fest)}
   .t .yr{color:var(--muted); font-weight:400; font-size:14.5px}
   .mk{font-size:14px; font-weight:700; vertical-align:1px; cursor:default}
   .mk1001{color:var(--green)}
@@ -700,7 +704,8 @@ function entryRowHtml(e, i, key, showMonth){
   return '<div class="row" data-key="' + esc(key) + '" data-i="' + i + '">' +
     '<div class="day">' + day + '</div>' +
     '<div class="meat">' +
-      '<div class="t">' + esc(e.title) + (e.year ? ' <span class="yr">' + esc(e.year) + '</span>' : '') +
+      '<div class="t' + (e.fest ? ' fest' : '') + '">' + esc(e.title) +
+        (e.year ? ' <span class="yr">' + esc(e.year) + '</span>' : '') +
         markHtml(e) + '</div>' +
       (sub ? '<div class="sub">' + esc(sub) + '</div>' : '') +
       (showMonth ? '<div class="mo">' + esc(monthLabel(key)) + '</div>' : '') +

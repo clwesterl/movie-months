@@ -71,7 +71,11 @@ Two separate concerns, stored separately:
      for scheduling the Loft fest, but nothing is synced or auto-added
      between them — this is only an indicator here. Shows in the list row
      and is searchable ("loft" finds them). Another festival is one more
-     entry in that field's `options`.
+     entry in that field's `options`. A tagged film's **title renders in the
+     festival purple** (`--fest: #775c91`), sampled from the Loft Film Fest
+     poster artwork — it's the dominant purple there, and dark enough to
+     stay legible as title text on white (5.6:1, WCAG AA). The colour keys
+     off *any* festival tag, so a second festival would want its own.
    - `imdbId` / IMDb link
 
    Deleting the **last movie** in a month prompts whether to delete the
